@@ -49,7 +49,18 @@ void main(List<String> args) async {
       // needs libpthread; -pthread also sets the right defines. It is a
       // no-op that MSVC never sees (Windows uses its own primitives), and
       // Apple libc++ links the pthread symbols unconditionally.
-      flags: [if (targetOS == OS.linux) '-pthread'],
+      //
+      // On Windows, `/EHsc` enables the C++ unwind semantics RE2's
+      // logging path relies on. NOMINMAX (defined below) keeps <windows.h>
+      // from shadowing `std::min`/`std::max` with its function macros,
+      // which otherwise breaks stringpiece.h under MSVC.
+      flags: [
+        if (targetOS == OS.linux) '-pthread',
+        if (targetOS == OS.windows) '/EHsc',
+      ],
+      // NOMINMAX is harmless where <windows.h> is never included, so it is
+      // defined unconditionally rather than gated on the target.
+      defines: {'NOMINMAX': null},
       language: Language.cpp,
       // Translated per compiler (-std= vs /std:); a raw flag would be
       // silently ignored by MSVC.
