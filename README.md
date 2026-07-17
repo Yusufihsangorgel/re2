@@ -25,6 +25,8 @@ Measured on this machine (Apple M-series, Dart 3.11), the classic
 
 RE2 stays linear; the backtracking engine does not.
 
+![How re2 runs a match: Dart API to FFI to native RE2 automaton](doc/architecture.png)
+
 [dart-lang/sdk#61284]: https://github.com/dart-lang/sdk/issues/61284
 
 ## This is not a "faster RegExp"
