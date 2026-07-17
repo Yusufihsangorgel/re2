@@ -4,6 +4,7 @@ description: >-
   catastrophic backtracking (ReDoS).
 version: 0.1.0
 repository: https://github.com/Yusufihsangorgel/re2
+issue_tracker: https://github.com/Yusufihsangorgel/re2/issues
 
 topics:
   - regex

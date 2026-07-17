@@ -1,6 +1,6 @@
 # re2
 
-![re2 banner](doc/banner.png)
+![re2 banner](https://raw.githubusercontent.com/Yusufihsangorgel/re2/main/doc/banner.png)
 
 Linear-time regular expressions for Dart, backed by Google's
 [RE2](https://github.com/google/re2) over FFI. RE2 matches in time linear
@@ -25,7 +25,7 @@ Measured on this machine (Apple M-series, Dart 3.11), the classic
 
 RE2 stays linear; the backtracking engine does not.
 
-![How re2 runs a match: Dart API to FFI to native RE2 automaton](doc/architecture.png)
+![How re2 runs a match: Dart API to FFI to native RE2 automaton](https://raw.githubusercontent.com/Yusufihsangorgel/re2/main/doc/architecture.png)
 
 [dart-lang/sdk#61284]: https://github.com/dart-lang/sdk/issues/61284
 
