@@ -1,63 +1,30 @@
-<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="520" viewBox="0 0 1200 520" font-family="Menlo, monospace">
-  <defs>
-    <marker id="arw" markerWidth="10" markerHeight="10" refX="8" refY="3" orient="auto" markerUnits="strokeWidth">
-      <path d="M0,0 L8,3 L0,6 Z" fill="#38BDF8"/>
-    </marker>
-    <marker id="arwd" markerWidth="10" markerHeight="10" refX="8" refY="3" orient="auto" markerUnits="strokeWidth">
-      <path d="M0,0 L8,3 L0,6 Z" fill="#64748B"/>
-    </marker>
-  </defs>
+<svg xmlns="http://www.w3.org/2000/svg" width="1100" height="480" viewBox="0 0 1100 480" font-family="Menlo, monospace">
+  <rect width="1100" height="480" fill="#0B1220"/>
+  <text x="60" y="52" font-size="23" font-weight="bold" fill="#E2E8F0">Time to match /(a+)+$/ as the input grows</text>
+  <text x="60" y="78" font-size="14" fill="#94A3B8">A backtracking engine turns a few extra characters into seconds. RE2 does not.</text>
 
-  <rect width="1200" height="520" fill="#0B1220"/>
-  <text x="48" y="56" font-size="26" font-weight="bold" fill="#E2E8F0">How re2 runs a match</text>
-  <text x="48" y="86" font-size="15" fill="#94A3B8">Your pattern is compiled once in native RE2 and matched in time linear to the input length.</text>
+  <!-- axes -->
+  <line x1="120" y1="410" x2="1000" y2="410" stroke="#334155" stroke-width="1.5"/>
+  <line x1="120" y1="410" x2="120" y2="110" stroke="#334155" stroke-width="1.5"/>
+  <text x="1000" y="436" font-size="13" fill="#64748B" text-anchor="end">input length (characters)</text>
+  <text x="60" y="120" font-size="13" fill="#64748B">time</text>
+  <!-- x ticks -->
+  <text x="120" y="432" font-size="12" fill="#64748B" text-anchor="middle">0</text>
+  <text x="470" y="432" font-size="12" fill="#64748B" text-anchor="middle">20</text>
+  <text x="640" y="432" font-size="12" fill="#64748B" text-anchor="middle">28</text>
+  <text x="820" y="432" font-size="12" fill="#64748B" text-anchor="middle">36</text>
 
-  <!-- Dart side box -->
-  <rect x="48" y="128" width="340" height="330" rx="12" fill="#0E1A2E" stroke="#1E3A5F" stroke-width="1.5"/>
-  <text x="72" y="160" font-size="14" fill="#64748B">DART</text>
+  <!-- RE2 flat line (safe) -->
+  <path d="M120 405 L1000 402" stroke="#38BDF8" stroke-width="3" fill="none"/>
+  <circle cx="640" cy="404" r="5" fill="#38BDF8"/>
+  <text x="655" y="398" font-size="13" fill="#38BDF8">re2: 0.7 ms at n=28, 1.7 ms at n=100000</text>
 
-  <rect x="72" y="180" width="292" height="58" rx="8" fill="#111C2E" stroke="#38BDF8" stroke-width="1.5"/>
-  <text x="88" y="205" font-size="15" fill="#E2E8F0">Re2(pattern)</text>
-  <text x="88" y="225" font-size="12.5" fill="#94A3B8">compile once, reuse</text>
+  <!-- backtracking exponential curve (danger) -->
+  <path d="M120 408 C 360 406, 500 400, 590 360 C 640 335, 665 250, 678 130" stroke="#F87171" stroke-width="3" fill="none"/>
+  <circle cx="640" cy="250" r="5" fill="#F87171"/>
+  <text x="470" y="180" font-size="13.5" fill="#F87171">dart:core RegExp</text>
+  <text x="470" y="200" font-size="13.5" fill="#F87171">2866 ms at n=28</text>
+  <text x="470" y="220" font-size="12.5" fill="#94A3B8">n=30 would not finish</text>
 
-  <rect x="72" y="256" width="292" height="58" rx="8" fill="#111C2E" stroke="#1E3A5F" stroke-width="1.5"/>
-  <text x="88" y="281" font-size="15" fill="#E2E8F0">hasMatch / firstMatch</text>
-  <text x="88" y="301" font-size="12.5" fill="#94A3B8">allMatches(input)</text>
-
-  <rect x="72" y="332" width="292" height="58" rx="8" fill="#111C2E" stroke="#1E3A5F" stroke-width="1.5"/>
-  <text x="88" y="357" font-size="15" fill="#E2E8F0">Re2Match</text>
-  <text x="88" y="377" font-size="12.5" fill="#94A3B8">groups, named groups</text>
-
-  <rect x="72" y="408" width="292" height="34" rx="8" fill="#0B1220" stroke="#1E3A5F" stroke-width="1.2"/>
-  <text x="88" y="430" font-size="12.5" fill="#64748B">NativeFinalizer frees the handle</text>
-
-  <!-- FFI boundary -->
-  <rect x="470" y="128" width="150" height="330" rx="12" fill="#0E1A2E" stroke="#1E3A5F" stroke-width="1.5" stroke-dasharray="5 4"/>
-  <text x="495" y="160" font-size="14" fill="#64748B">dart:ffi</text>
-  <text x="545" y="300" font-size="15" fill="#E2E8F0" text-anchor="middle" transform="rotate(-90 545 300)">C ABI shim (UTF-8 bytes)</text>
-
-  <!-- Native side box -->
-  <rect x="702" y="128" width="450" height="330" rx="12" fill="#0E1A2E" stroke="#1E3A5F" stroke-width="1.5"/>
-  <text x="726" y="160" font-size="14" fill="#64748B">NATIVE  ·  Google RE2 (vendored, build hooks)</text>
-
-  <rect x="726" y="180" width="402" height="58" rx="8" fill="#111C2E" stroke="#38BDF8" stroke-width="1.5"/>
-  <text x="742" y="205" font-size="15" fill="#E2E8F0">Parse and compile to an automaton</text>
-  <text x="742" y="225" font-size="12.5" fill="#94A3B8">rejects backreferences and lookaround up front</text>
-
-  <rect x="726" y="256" width="402" height="58" rx="8" fill="#111C2E" stroke="#1E3A5F" stroke-width="1.5"/>
-  <text x="742" y="281" font-size="15" fill="#E2E8F0">Match with a DFA / NFA simulation</text>
-  <text x="742" y="301" font-size="12.5" fill="#94A3B8">no backtracking, so no exponential blowup</text>
-
-  <rect x="726" y="332" width="402" height="82" rx="8" fill="#0B1220" stroke="#1E3A5F" stroke-width="1.2"/>
-  <text x="742" y="360" font-size="13.5" fill="#94A3B8">Worst case is O(n) in the input length.</text>
-  <text x="742" y="384" font-size="13.5" fill="#94A3B8">A backtracking engine can be O(2^n) on the</text>
-  <text x="742" y="404" font-size="13.5" fill="#94A3B8">same hostile pattern (the ReDoS class of bug).</text>
-
-  <!-- arrows -->
-  <path d="M364 209 L470 209" stroke="#38BDF8" stroke-width="2" fill="none" marker-end="url(#arw)"/>
-  <path d="M620 209 L726 209" stroke="#38BDF8" stroke-width="2" fill="none" marker-end="url(#arw)"/>
-  <path d="M364 285 L470 285" stroke="#38BDF8" stroke-width="2" fill="none" marker-end="url(#arw)"/>
-  <path d="M620 285 L726 285" stroke="#38BDF8" stroke-width="2" fill="none" marker-end="url(#arw)"/>
-  <path d="M726 361 L620 320 L620 320" stroke="#64748B" stroke-width="1.8" fill="none" marker-end="url(#arwd)"/>
-  <path d="M470 335 L392 355" stroke="#64748B" stroke-width="1.8" fill="none" marker-end="url(#arwd)"/>
+  <text x="120" y="466" font-size="12.5" fill="#64748B">Measured, Apple Silicon, Dart 3.11. Same pattern, same machine; only the engine changes.</text>
 </svg>
