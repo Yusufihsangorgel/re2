@@ -22,7 +22,6 @@ SOFTWARE.
 
 ---
 
-This package vendors the BLAKE3 C implementation under
-src/third_party/blake3/. BLAKE3 is licensed separately; see
-src/third_party/blake3/NOTICE and the LICENSE_CC0, LICENSE_A2, and
-LICENSE_A2LLVM files in that directory.
+This package vendors RE2 (https://github.com/google/re2) by Google under
+src/third_party/re2/ (the last revision before the Abseil dependency),
+licensed under the BSD-3-Clause license; see src/third_party/re2/LICENSE.

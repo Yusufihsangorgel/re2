@@ -162,6 +162,11 @@ final class Re2 implements Finalizable {
   /// point so iteration always terminates. Matching runs eagerly; the returned
   /// iterable holds no native resources.
   ///
+  /// A [start] that falls in the middle of a surrogate pair is rounded
+  /// forward to the next code point, so that character is skipped; in the
+  /// usual case ([start] of 0, or the end of a previous match) [start] is
+  /// always on a code-point boundary and results match `RegExp` exactly.
+  ///
   /// Throws [RangeError] if [start] is outside `0..input.length`, and
   /// [StateError] if this instance has been disposed.
   Iterable<Re2Match> allMatches(String input, [int start = 0]) {

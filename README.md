@@ -1,5 +1,7 @@
 # re2
 
+![re2 banner](doc/banner.png)
+
 Linear-time regular expressions for Dart, backed by Google's
 [RE2](https://github.com/google/re2) over FFI. RE2 matches in time linear
 in the length of the input, so a pattern can never take exponential time
@@ -31,7 +33,7 @@ Read this before reaching for it.
 
 - The point is a **time bound on untrusted input**, not raw speed. On
   ordinary patterns and input, `dart:core` `RegExp` is usually faster:
-  crossing the FFI boundary and marshalling the string costs about 1.6x
+  crossing the FFI boundary and marshalling the string costs roughly 2x
   here. Use `re2` where the pattern or the input is not under your
   control; keep `RegExp` everywhere else.
 - RE2 does **not** support backreferences (`\1`) or lookaround
