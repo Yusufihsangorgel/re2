@@ -155,6 +155,67 @@ final class Re2 implements Finalizable {
   /// Throws [StateError] if this instance has been disposed.
   String? stringMatch(String input) => firstMatch(input)?.group(0);
 
+  /// Returns [input] with the first match of the pattern replaced by [rewrite].
+  ///
+  /// [rewrite] may reference capture groups with `\1`..`\9`, and `\0` for the
+  /// whole match, exactly as RE2's own rewrite strings do. A literal backslash
+  /// is written `\\`. When the pattern does not match, [input] is returned
+  /// unchanged.
+  ///
+  /// Throws [StateError] if this instance has been disposed.
+  String replaceFirst(String input, String rewrite) =>
+      _replace(input, rewrite, global: false);
+
+  /// Returns [input] with every non-overlapping match of the pattern replaced
+  /// by [rewrite].
+  ///
+  /// This is the linear-time counterpart to
+  /// `input.replaceAll(RegExp(...), ...)`: because RE2 cannot backtrack, it is
+  /// safe to run on an untrusted pattern or untrusted input, which is exactly
+  /// the redact-and-sanitize case where `dart:core`'s `RegExp` can hang. See
+  /// [replaceFirst] for the [rewrite] syntax.
+  ///
+  /// Throws [StateError] if this instance has been disposed.
+  String replaceAll(String input, String rewrite) =>
+      _replace(input, rewrite, global: true);
+
+  String _replace(String input, String rewrite, {required bool global}) {
+    _checkNotDisposed();
+    final textBytes = utf8.encode(input);
+    final rewriteBytes = utf8.encode(rewrite);
+    final textPtr = allocateBytes(textBytes.length);
+    final rewritePtr = allocateBytes(rewriteBytes.length);
+    final outLength = allocateInt32(1);
+    final outCount = allocateInt32(1);
+    try {
+      textPtr.asTypedList(textBytes.length).setAll(0, textBytes);
+      rewritePtr.asTypedList(rewriteBytes.length).setAll(0, rewriteBytes);
+      final resultPtr = re2Replace(
+        _handle,
+        textPtr,
+        textBytes.length,
+        rewritePtr,
+        rewriteBytes.length,
+        global ? 1 : 0,
+        outLength,
+        outCount,
+      );
+      if (resultPtr == nullptr) {
+        throw StateError('RE2 replace failed');
+      }
+      try {
+        return utf8.decode(resultPtr.asTypedList(outLength.value));
+      } finally {
+        re2FreeString(resultPtr);
+      }
+    } finally {
+      freeBytes(textPtr);
+      freeBytes(rewritePtr);
+      freeInt32(outLength);
+      freeInt32(outCount);
+    }
+  }
+
   /// Every non-overlapping match of the pattern in [input], starting the
   /// search at the UTF-16 index [start].
   ///

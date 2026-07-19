@@ -87,6 +87,38 @@ external int re2NamedGroupAt(
   Pointer<Int32> outIndex,
 );
 
+/// Replaces matches of the pattern in [text] with [rewrite]. When [global] is
+/// nonzero every non-overlapping match is replaced, otherwise only the first.
+/// Returns a freshly allocated result buffer (release with [re2FreeString]),
+/// writing its byte length to [outLength] and the replacement count to
+/// [outCount]. Null on failure.
+@Native<
+  Pointer<Uint8> Function(
+    Pointer<Void>,
+    Pointer<Uint8>,
+    Int32,
+    Pointer<Uint8>,
+    Int32,
+    Int32,
+    Pointer<Int32>,
+    Pointer<Int32>,
+  )
+>(symbol: 're2_replace')
+external Pointer<Uint8> re2Replace(
+  Pointer<Void> handle,
+  Pointer<Uint8> text,
+  int textLength,
+  Pointer<Uint8> rewrite,
+  int rewriteLength,
+  int global,
+  Pointer<Int32> outLength,
+  Pointer<Int32> outCount,
+);
+
+/// Releases a buffer returned by [re2Replace].
+@Native<Void Function(Pointer<Uint8>)>(symbol: 're2_free_string')
+external void re2FreeString(Pointer<Uint8> pointer);
+
 /// Releases a handle from [re2Compile].
 @Native<Void Function(Pointer<Void>)>(symbol: 're2_free')
 external void re2Free(Pointer<Void> handle);

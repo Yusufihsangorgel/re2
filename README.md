@@ -67,6 +67,25 @@ try {
 when you are done, or let the finalizer release it. Construct with
 `caseSensitive`, `multiLine`, and `dotAll` flags.
 
+## Substitution
+
+`replaceAll` and `replaceFirst` are the linear-time counterparts to
+`String.replaceAll(RegExp(...), ...)`. Because RE2 cannot backtrack, running a
+substitution over untrusted input, or with a user-supplied pattern, cannot hang
+the isolate, which is exactly the redact-and-sanitize case that makes ReDoS
+dangerous.
+
+```dart
+final digits = Re2(r'\d');
+print(digits.replaceAll('card 4111 1111', '*')); // card **** ****
+digits.dispose();
+
+// The rewrite can reference capture groups with \1..\9.
+final swap = Re2(r'(\w+)@(\w+)');
+print(swap.replaceAll('a@b and c@d', r'\2.\1')); // b.a and d.c
+swap.dispose();
+```
+
 ## Supported syntax
 
 RE2 syntax is close to PCRE for the features it keeps. Full reference:

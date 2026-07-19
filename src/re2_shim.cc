@@ -7,6 +7,7 @@
 // value, exactly as the blake3_ffi and simdjson_dart shims do.
 
 #include <cstdint>
+#include <cstdlib>
 #include <cstring>
 #include <iterator>
 #include <map>
@@ -175,6 +176,43 @@ RE2_EXPORT int32_t re2_named_group_at(void* handle, int32_t index,
     return -1;
   }
 }
+
+// Replaces matches of the pattern in `text` (UTF-8, `text_len` bytes) with
+// `rewrite`. When `global` is nonzero every non-overlapping match is replaced;
+// otherwise only the first. `rewrite` may reference capture groups with
+// \1..\9, exactly as RE2's own Replace/GlobalReplace do. Returns a freshly
+// allocated buffer of the result (release with re2_free_string), writes its
+// byte length to *out_len and the number of replacements to *out_count.
+// Returns null on failure (null handle, uncompiled pattern, or allocation).
+RE2_EXPORT char* re2_replace(void* handle, const char* text, int32_t text_len,
+                             const char* rewrite, int32_t rewrite_len,
+                             int32_t global, int32_t* out_len,
+                             int32_t* out_count) {
+  if (handle == nullptr || out_len == nullptr || out_count == nullptr) {
+    return nullptr;
+  }
+  try {
+    RE2* re = static_cast<RE2*>(handle);
+    if (!re->ok()) return nullptr;
+    std::string str(text, static_cast<size_t>(text_len));
+    const StringPiece rw(rewrite, static_cast<size_t>(rewrite_len));
+    const int count = global != 0 ? RE2::GlobalReplace(&str, *re, rw)
+                                  : (RE2::Replace(&str, *re, rw) ? 1 : 0);
+    // Allocate at least one byte so success always returns non-null, even when
+    // the whole input was replaced with nothing.
+    char* out = static_cast<char*>(std::malloc(str.empty() ? 1 : str.size()));
+    if (out == nullptr) return nullptr;
+    if (!str.empty()) std::memcpy(out, str.data(), str.size());
+    *out_len = static_cast<int32_t>(str.size());
+    *out_count = count;
+    return out;
+  } catch (...) {
+    return nullptr;
+  }
+}
+
+// Releases a buffer returned by re2_replace. Safe on a null pointer.
+RE2_EXPORT void re2_free_string(char* p) { std::free(p); }
 
 // Releases a handle from re2_compile. Safe on a null handle.
 RE2_EXPORT void re2_free(void* handle) { delete static_cast<RE2*>(handle); }

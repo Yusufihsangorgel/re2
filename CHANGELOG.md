@@ -1,3 +1,11 @@
+## 0.2.0
+
+- Add `replaceAll` and `replaceFirst`, the linear-time counterparts to
+  `String.replaceAll(RegExp(...), ...)`. Because RE2 cannot backtrack, running
+  a substitution over untrusted input or with a user-supplied pattern cannot
+  hang the isolate. The rewrite string can reference capture groups with
+  `\1`..`\9`.
+
 ## 0.1.0
 
 Initial release, vendoring RE2 (last revision before the Abseil
