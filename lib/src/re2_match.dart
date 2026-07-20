@@ -1,14 +1,21 @@
 /// A single match produced by [Re2.firstMatch] or [Re2.allMatches].
 ///
-/// The interface mirrors the parts of `RegExpMatch` most code uses: [start],
-/// [end], [group], the `[]` operator, [groupCount], [namedGroup] and
-/// [groupNames]. Offsets are UTF-16 code unit indices into [input], the same
-/// convention `RegExpMatch` uses, so `input.substring(match.start, match.end)`
-/// is the matched text.
-final class Re2Match {
-  Re2Match(this.input, this._starts, this._ends, this._names);
+/// This is a [Match], so it works everywhere the `String` API returns matches
+/// for a [Pattern], and it also carries the `RegExpMatch`-style extras most
+/// code reaches for: [namedGroup] and [groupNames]. (It implements [Match]
+/// rather than `RegExpMatch` because the latter's `pattern` getter is typed as
+/// `RegExp`, and a [Re2] is not one.) Offsets are UTF-16 code unit indices into
+/// [input], the same convention `RegExpMatch` uses, so
+/// `input.substring(match.start, match.end)` is the matched text.
+final class Re2Match implements Match {
+  Re2Match(this.pattern, this.input, this._starts, this._ends, this._names);
+
+  /// The [Re2] this match was produced by.
+  @override
+  final Pattern pattern;
 
   /// The input string this match was found in.
+  @override
   final String input;
 
   // Group 0 is the whole match; groups 1..groupCount are the captures. An
@@ -18,18 +25,22 @@ final class Re2Match {
   final Map<String, int> _names;
 
   /// The index of the first UTF-16 code unit of the whole match.
+  @override
   int get start => _starts[0];
 
   /// The index just past the last UTF-16 code unit of the whole match.
+  @override
   int get end => _ends[0];
 
   /// The number of capturing groups, excluding the whole match.
+  @override
   int get groupCount => _starts.length - 1;
 
   /// The text captured by group [index], or `null` if that optional group did
   /// not participate in the match. Group 0 is the whole match.
   ///
   /// Throws [RangeError] if [index] is outside `0..groupCount`.
+  @override
   String? group(int index) {
     RangeError.checkValueInInterval(index, 0, groupCount, 'index');
     final begin = _starts[index];
@@ -38,9 +49,11 @@ final class Re2Match {
   }
 
   /// Shorthand for [group].
+  @override
   String? operator [](int index) => group(index);
 
   /// The text captured by each group in [indices], in order.
+  @override
   List<String?> groups(List<int> indices) => [
     for (final index in indices) group(index),
   ];

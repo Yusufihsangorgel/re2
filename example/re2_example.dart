@@ -44,4 +44,14 @@ void main() {
   } on FormatException catch (e) {
     print('rejected unsupported pattern: ${e.message}');
   }
+
+  // 4) A Re2 is a Pattern, so it drops straight into the String API in place of
+  // a RegExp, and those calls then run in RE2's linear time.
+  final comma = Re2(r'\s*,\s*');
+  try {
+    print('a, b ,c,  d'.split(comma)); // [a, b, c, d]
+    print('123abc'.startsWith(comma)); // false
+  } finally {
+    comma.dispose();
+  }
 }

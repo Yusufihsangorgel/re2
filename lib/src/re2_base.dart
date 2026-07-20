@@ -30,7 +30,7 @@ import 're2_match.dart';
 /// backtracking engines vulnerable in the first place. A pattern using them is
 /// rejected at construction with a [FormatException]. See the README for the
 /// full list of supported and unsupported syntax.
-final class Re2 implements Finalizable {
+final class Re2 implements Finalizable, Pattern {
   /// Compiles [pattern].
   ///
   /// - [caseSensitive] (default `true`): when `false`, matching ignores case.
@@ -230,6 +230,7 @@ final class Re2 implements Finalizable {
   ///
   /// Throws [RangeError] if [start] is outside `0..input.length`, and
   /// [StateError] if this instance has been disposed.
+  @override
   Iterable<Re2Match> allMatches(String input, [int start = 0]) {
     _checkNotDisposed();
     RangeError.checkValueInInterval(start, 0, input.length, 'start');
@@ -273,6 +274,33 @@ final class Re2 implements Finalizable {
     return matches;
   }
 
+  /// The match beginning exactly at [start] in [input], or `null` if the
+  /// pattern does not match there.
+  ///
+  /// This is the [Pattern] method the `String` API uses for anchored checks
+  /// such as [String.startsWith]. Because it, [allMatches] and the returned
+  /// [Re2Match] all satisfy [Pattern] and [Match], a [Re2] can be passed
+  /// anywhere a `Pattern` is expected — `input.split(re2)`,
+  /// `input.replaceAll(re2, ...)`, `input.contains(re2)` — and every one of
+  /// those runs in RE2's guaranteed linear time instead of `dart:core`
+  /// `RegExp`'s backtracking.
+  ///
+  /// [start] is a UTF-16 code unit index; it throws [RangeError] if it is
+  /// outside `0..input.length`, and [StateError] if this instance has been
+  /// disposed.
+  @override
+  Re2Match? matchAsPrefix(String input, [int start = 0]) {
+    _checkNotDisposed();
+    RangeError.checkValueInInterval(start, 0, input.length, 'start');
+    // RE2's leftmost search from `start` returns the earliest match at or after
+    // it; a prefix match is exactly that match when it begins at `start`. If the
+    // earliest match begins later, nothing matches at `start`.
+    for (final match in allMatches(input, start)) {
+      return match.start == start ? match : null;
+    }
+    return null;
+  }
+
   /// Releases the native handle. Safe to call more than once. After disposal,
   /// [hasMatch], [firstMatch], [stringMatch] and [allMatches] throw
   /// [StateError].
@@ -313,6 +341,7 @@ final class Re2 implements Finalizable {
     }
 
     return Re2Match(
+      this,
       input,
       [for (var i = 0; i < slots; i++) utf16[i * 2]],
       [for (var i = 0; i < slots; i++) utf16[i * 2 + 1]],

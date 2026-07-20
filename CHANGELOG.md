@@ -1,3 +1,15 @@
+## 0.3.0
+
+- `Re2` now implements `Pattern` and `Re2Match` implements `Match`, so a `Re2`
+  drops straight into the `String` API in place of a `RegExp`: `String.split`,
+  `String.replaceAll`, `String.replaceAllMapped`, `String.contains`,
+  `String.startsWith`, `String.splitMapJoin` and the rest all accept it and run
+  in RE2's guaranteed linear time. Results match `dart:core`'s `RegExp`
+  exactly, including UTF-16 offsets outside the Basic Multilingual Plane. Adds
+  `matchAsPrefix` to complete the `Pattern` contract. (`Re2Match` implements
+  `Match` rather than `RegExpMatch`, whose `pattern` getter is typed as
+  `RegExp`; `namedGroup` and `groupNames` remain available as methods.)
+
 ## 0.2.0
 
 - Add `replaceAll` and `replaceFirst`, the linear-time counterparts to

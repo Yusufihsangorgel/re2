@@ -86,6 +86,34 @@ print(swap.replaceAll('a@b and c@d', r'\2.\1')); // b.a and d.c
 swap.dispose();
 ```
 
+## Drop-in for the String API
+
+`Re2` implements `Pattern` and its matches implement `Match`, so it works
+anywhere a `RegExp` would: pass it straight to `String.split`,
+`String.replaceAll`, `String.replaceAllMapped`, `String.contains`,
+`String.startsWith`, `String.splitMapJoin`, and the rest. Swapping `RegExp` for
+`Re2` makes those calls run in RE2's guaranteed linear time, with no other
+change to the code.
+
+```dart
+final re = Re2(r'\s*,\s*');
+print('a, b ,c,  d'.split(re));                 // [a, b, c, d]
+
+final digits = Re2(r'\d+');
+print('order 12, 340 units'.replaceAll(digits, '#')); // order #, # units
+print('123abc'.startsWith(digits));                    // true
+
+// Match objects work in the mapped callbacks, so captures are available.
+final pair = Re2(r'(\w)(\d)');
+print('a1 b2'.replaceAllMapped(pair, (m) => '${m[2]}${m[1]}')); // 1a 2b
+```
+
+The results match `dart:core`'s `RegExp` exactly, including UTF-16 offsets for
+text outside the Basic Multilingual Plane. `Re2` implements `Match` rather than
+`RegExpMatch` because the latter types its `pattern` getter as `RegExp`; the
+named-group helpers (`namedGroup`, `groupNames`) are still there as methods on
+the returned match.
+
 ## Supported syntax
 
 RE2 syntax is close to PCRE for the features it keeps. Full reference:
