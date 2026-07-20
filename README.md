@@ -138,9 +138,23 @@ RE2 syntax is close to PCRE for the features it keeps. Full reference:
 
 The native library is compiled at build time through Dart build hooks
 (Dart 3.10+), so there is nothing to install beyond a C++ toolchain
-(Xcode CLT, gcc/clang, or MSVC). Verified on macOS arm64; CI covers
-Linux, macOS, and Windows. Flutter support arrives when build hooks land
-in stable Flutter.
+(Xcode CLT, gcc/clang, or MSVC).
+
+Build hooks are stable in Flutter now, so **`re2` works in a Flutter app**, not
+only in a plain Dart one. Verified end to end: it resolves, compiles, and runs a
+match inside a `flutter test`, and `flutter build macos` produces a working app
+that links the native library.
+
+| Target                              | Supported |
+| ----------------------------------- | --------- |
+| Dart VM / server (macOS/Linux/Win)  | yes       |
+| Flutter desktop (macOS/Linux/Win)   | yes       |
+| Flutter mobile (Android/iOS)        | not tested yet |
+| Web                                 | no — FFI has no JS engine, so the linear-time guarantee cannot be offered there; use it on the server |
+
+The one place to be careful is web: there is no native RE2 in a browser, and
+falling back to `dart:core` would silently reintroduce the ReDoS exposure `re2`
+exists to remove, so the package does not pretend to run there.
 
 ## Credits and licenses
 

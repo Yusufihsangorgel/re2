@@ -1,3 +1,14 @@
+## 0.3.5
+
+- Correct the README's platform claim. It said "Flutter support arrives when
+  build hooks land in stable Flutter", which is stale: build hooks are stable,
+  and re2 works in a Flutter app today. Verified end to end — it resolves,
+  compiles, and runs a match inside `flutter test`, and `flutter build macos`
+  produces a working app that links the native library. The README now carries
+  an honest support matrix, including that web is unsupported by design: a
+  `dart:core` fallback there would silently drop the linear-time guarantee the
+  package exists to provide.
+
 ## 0.3.4
 
 - Widen the native-toolchain constraints so the package can be installed in a
