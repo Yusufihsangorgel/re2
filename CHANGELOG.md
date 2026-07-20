@@ -1,3 +1,22 @@
+## 0.4.0
+
+- `Re2.escape(String)` turns an arbitrary string into a pattern that matches it
+  literally, so a search term or filename can be interpolated into a larger
+  pattern without its metacharacters being interpreted. Until now the only
+  escaper was `dart:core`'s `RegExp.escape`, which meant an untrusted fragment
+  pulled the whole pattern back onto the backtracking engine, the one thing this
+  package exists to avoid. Backed by RE2's `QuoteMeta`.
+- The `Re2` constructor takes an optional `maxBytes`, a cap on the memory the
+  compiled pattern may use. A pattern from an untrusted source can be built to
+  compile into a large program even though it matches in linear time; with
+  `maxBytes` it is rejected at construction with a `FormatException` instead of
+  allocated. Null keeps RE2's own default (about 8 MB). Backed by
+  `RE2::Options::set_max_mem`.
+- Together these close the untrusted-*pattern* half of the story; linear match
+  time already covered untrusted *input*. Verified: `escape` round-trips every
+  sample and its output is inert as a pattern, cross-checked against
+  `RegExp.escape`; a pathological pattern under a small `maxBytes` throws.
+
 ## 0.3.5
 
 - Correct the README's platform claim. It said "Flutter support arrives when

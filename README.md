@@ -120,6 +120,33 @@ text outside the Basic Multilingual Plane. `Re2` implements `Match` rather than
 named-group helpers (`namedGroup`, `groupNames`) are still there as methods on
 the returned match.
 
+## Untrusted patterns
+
+Linear match time protects you from a hostile *input*. Two more things protect
+you from a hostile or arbitrary *pattern*.
+
+When part of a pattern is a plain string you do not control (a search term, a
+filename, a tag), escape it so its characters are taken literally instead of as
+regex syntax:
+
+```dart
+final re = Re2('name:\\s*${Re2.escape(userInput)}');
+// escape('a.b*') matches the four characters a.b*, not "a, any char, b, zero+"
+```
+
+Without this the only escape helper is `dart:core`'s `RegExp.escape`, so an
+untrusted fragment would drag you back to the backtracking engine for the whole
+pattern. `Re2.escape` keeps the linear-time guarantee over the composed pattern.
+
+And a pattern from an untrusted source can be built to compile into a large
+program even though it matches in linear time. `maxBytes` caps that: a pattern
+that would not fit is rejected at construction rather than allocated.
+
+```dart
+// Refused with a FormatException instead of building a huge automaton.
+Re2(r'(?:a{1000}){1000}', maxBytes: 1024);
+```
+
 ## Supported syntax
 
 RE2 syntax is close to PCRE for the features it keeps. Full reference:

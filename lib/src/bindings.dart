@@ -12,15 +12,29 @@ import 'package:ffi/ffi.dart';
 /// Compiles a pattern (UTF-8 bytes) and returns an owning handle. The handle
 /// is non-null except on allocation failure; a pattern RE2 rejects still
 /// returns a handle whose [re2Ok] is 0 and whose [re2Error] explains why.
-@Native<Pointer<Void> Function(Pointer<Uint8>, Int32, Int32, Int32, Int32)>(
-  symbol: 're2_compile',
-)
+@Native<
+  Pointer<Void> Function(Pointer<Uint8>, Int32, Int32, Int32, Int32, Int64)
+>(symbol: 're2_compile')
 external Pointer<Void> re2Compile(
   Pointer<Uint8> pattern,
   int patternLength,
   int caseSensitive,
   int multiLine,
   int dotAll,
+  int maxMem,
+);
+
+/// Escapes `text` into a pattern that matches it literally. Writes up to
+/// `outCapacity` bytes into `out` and returns the full escaped length, so a
+/// caller that undersized `out` retries with the returned length.
+@Native<Int32 Function(Pointer<Uint8>, Int32, Pointer<Uint8>, Int32)>(
+  symbol: 're2_quote_meta',
+)
+external int re2QuoteMeta(
+  Pointer<Uint8> text,
+  int textLength,
+  Pointer<Uint8> out,
+  int outCapacity,
 );
 
 /// 1 if the pattern compiled cleanly, 0 otherwise.

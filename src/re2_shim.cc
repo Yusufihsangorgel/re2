@@ -42,12 +42,17 @@ extern "C" {
 // line boundaries.
 RE2_EXPORT void* re2_compile(const char* pattern, int32_t pattern_len,
                              int32_t case_sensitive, int32_t multi_line,
-                             int32_t dot_all) {
+                             int32_t dot_all, int64_t max_mem) {
   try {
     RE2::Options options;
     options.set_log_errors(false);
     if (case_sensitive == 0) options.set_case_sensitive(false);
     if (dot_all != 0) options.set_dot_nl(true);
+    // A non-positive value keeps RE2's own default budget. A positive one caps
+    // the compiled program's memory, so a pattern that would expand into an
+    // oversized automaton fails to compile (re2_ok() == 0) instead of
+    // allocating unboundedly, which is the guard against a hostile pattern.
+    if (max_mem > 0) options.set_max_mem(max_mem);
 
     std::string source;
     if (multi_line != 0) source.append("(?m)");
@@ -58,6 +63,29 @@ RE2_EXPORT void* re2_compile(const char* pattern, int32_t pattern_len,
                                options));
   } catch (...) {
     return nullptr;
+  }
+}
+
+// Escapes `text` so that, read as a pattern, it matches that exact string and
+// nothing is treated as a metacharacter. Writes the result into `out` (up to
+// `out_cap` bytes) and returns the full escaped length; if that length exceeds
+// `out_cap` the caller retries with a larger buffer. A NULL `out` (or zero
+// capacity) just measures. Worst case is 2x the input plus a NUL, so a caller
+// can size the buffer up front.
+RE2_EXPORT int32_t re2_quote_meta(const char* text, int32_t text_len,
+                                  char* out, int32_t out_cap) {
+  try {
+    const std::string quoted =
+        RE2::QuoteMeta(StringPiece(text, static_cast<size_t>(text_len)));
+    const int32_t len = static_cast<int32_t>(quoted.size());
+    if (out != nullptr && out_cap > 0) {
+      const int32_t n = len < out_cap ? len : out_cap - 1;
+      if (n > 0) std::memcpy(out, quoted.data(), static_cast<size_t>(n));
+      out[n] = '\0';
+    }
+    return len;
+  } catch (...) {
+    return -1;
   }
 }
 

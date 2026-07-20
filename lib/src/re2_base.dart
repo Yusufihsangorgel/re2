@@ -38,18 +38,29 @@ final class Re2 implements Finalizable, Pattern {
   ///   boundaries as well as the start and end of the input.
   /// - [dotAll] (default `false`): when `true`, `.` also matches line
   ///   terminators.
+  /// - [maxBytes] (default null): a cap on the memory the compiled pattern may
+  ///   use. A pattern that would compile into a larger automaton is rejected
+  ///   with a [FormatException] instead of allocating it. This is the guard
+  ///   for an untrusted pattern: match time is already linear, but a pattern
+  ///   from an untrusted source can still be built to compile into a large
+  ///   program, and this bounds that. Null leaves RE2's own default budget
+  ///   (about 8 MB). Must be positive.
   ///
   /// Throws a [FormatException] whose message is RE2's own diagnostic if the
-  /// pattern is invalid or uses an unsupported feature (backreference,
-  /// lookahead or lookbehind).
+  /// pattern is invalid, uses an unsupported feature (backreference, lookahead
+  /// or lookbehind), or does not fit [maxBytes].
   Re2(
     this.pattern, {
     bool caseSensitive = true,
     bool multiLine = false,
     bool dotAll = false,
+    int? maxBytes,
   }) : isCaseSensitive = caseSensitive,
        isMultiLine = multiLine,
        isDotAll = dotAll {
+    if (maxBytes != null && maxBytes <= 0) {
+      throw ArgumentError.value(maxBytes, 'maxBytes', 'must be positive');
+    }
     final patternBytes = utf8.encode(pattern);
     final patternPtr = allocateBytes(patternBytes.length);
     try {
@@ -60,6 +71,7 @@ final class Re2 implements Finalizable, Pattern {
         caseSensitive ? 1 : 0,
         multiLine ? 1 : 0,
         dotAll ? 1 : 0,
+        maxBytes ?? 0,
       );
     } finally {
       freeBytes(patternPtr);
@@ -93,6 +105,45 @@ final class Re2 implements Finalizable, Pattern {
   final bool isDotAll;
 
   static final NativeFinalizer _finalizer = NativeFinalizer(re2FreeFunction);
+
+  /// Escapes [literal] into a pattern that matches it exactly, with every
+  /// character taken literally rather than as regex syntax.
+  ///
+  /// Use this when part of a pattern comes from an untrusted or arbitrary
+  /// string, for instance a user's search term dropped into a larger pattern:
+  ///
+  /// ```dart
+  /// final re = Re2('name:\\s*${Re2.escape(userInput)}');
+  /// ```
+  ///
+  /// Without it the caller has to reach back to `dart:core`'s `RegExp.escape`,
+  /// which is the one thing that would otherwise send an untrusted-pattern use
+  /// case back to the backtracking engine. `Re2.escape(s)` matches `s` and
+  /// nothing else: `escape('a.b*')` is a pattern for the four-character string
+  /// `a.b*`, not "a, any char, b, zero or more".
+  static String escape(String literal) {
+    final bytes = utf8.encode(literal);
+    final textPtr = allocateBytes(bytes.length);
+    try {
+      textPtr.asTypedList(bytes.length).setAll(0, bytes);
+      // First call measures: pass a null buffer to learn the escaped length,
+      // then a buffer of exactly that size plus the NUL terminator.
+      final needed = re2QuoteMeta(textPtr, bytes.length, nullptr, 0);
+      if (needed < 0) {
+        throw StateError('RE2 could not escape the string');
+      }
+      if (needed == 0) return '';
+      final outPtr = allocateBytes(needed + 1);
+      try {
+        re2QuoteMeta(textPtr, bytes.length, outPtr, needed + 1);
+        return utf8.decode(outPtr.asTypedList(needed));
+      } finally {
+        freeBytes(outPtr);
+      }
+    } finally {
+      freeBytes(textPtr);
+    }
+  }
 
   late Pointer<Void> _handle;
   late final int _groupCount;
