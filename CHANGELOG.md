@@ -1,3 +1,10 @@
+## 0.3.2
+
+- Declare the diagram in `pubspec.yaml` so pub.dev renders it on the package
+  page. It was already in the repository and the README, but pub.dev shows only
+  what the `screenshots:` field points at, so the page opened with prose where
+  the picture should have been.
+
 ## 0.3.1
 
 - `example/redos.dart` runs the comparison the README asserts, on your machine,
