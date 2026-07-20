@@ -161,3 +161,47 @@ void freeInt32(Pointer<Int32> pointer) => malloc.free(pointer);
 /// `free`.
 final Pointer<NativeFinalizerFunction> re2FreeFunction =
     Native.addressOf<NativeFinalizerFunction>(re2Free);
+
+// --- RE2::Set bindings -------------------------------------------------------
+
+/// Creates an empty unanchored Set handle.
+@Native<Pointer<Void> Function(Int32, Int32)>(symbol: 're2_set_new')
+external Pointer<Void> re2SetNew(int caseSensitive, int dotAll);
+
+/// Adds a pattern; returns its 0-based index or -1, writing the error into
+/// [err] on failure.
+@Native<Int32 Function(Pointer<Void>, Pointer<Uint8>, Int32, Pointer<Uint8>, Int32)>(
+  symbol: 're2_set_add',
+)
+external int re2SetAdd(
+  Pointer<Void> handle,
+  Pointer<Uint8> pattern,
+  int patternLength,
+  Pointer<Uint8> err,
+  int errCapacity,
+);
+
+/// Compiles the added patterns; 1 on success, 0 on failure.
+@Native<Int32 Function(Pointer<Void>)>(symbol: 're2_set_compile')
+external int re2SetCompile(Pointer<Void> handle);
+
+/// Matches [text], writing matched indices into [out]; returns the total match
+/// count (which may exceed [outCapacity]), or -1 on error.
+@Native<Int32 Function(Pointer<Void>, Pointer<Uint8>, Int32, Pointer<Int32>, Int32)>(
+  symbol: 're2_set_match',
+)
+external int re2SetMatch(
+  Pointer<Void> handle,
+  Pointer<Uint8> text,
+  int textLength,
+  Pointer<Int32> out,
+  int outCapacity,
+);
+
+/// Releases a Set handle from [re2SetNew].
+@Native<Void Function(Pointer<Void>)>(symbol: 're2_set_free')
+external void re2SetFree(Pointer<Void> handle);
+
+/// The address of the native `re2_set_free`, for a [NativeFinalizer].
+final Pointer<NativeFinalizerFunction> re2SetFreeFunction =
+    Native.addressOf<NativeFinalizerFunction>(re2SetFree);

@@ -25,6 +25,7 @@
 #endif
 
 #include "re2/re2.h"
+#include "re2/set.h"
 
 using re2::StringPiece;
 
@@ -244,5 +245,92 @@ RE2_EXPORT void re2_free_string(char* p) { std::free(p); }
 
 // Releases a handle from re2_compile. Safe on a null handle.
 RE2_EXPORT void re2_free(void* handle) { delete static_cast<RE2*>(handle); }
+
+// --- RE2::Set: match many patterns against one input in a single pass. -------
+//
+// A Set compiles N patterns into one automaton and, in one linear scan, reports
+// which of them matched. This is what a backtracking engine cannot do: with the
+// builtin, testing N rules means N separate passes, each able to blow up.
+
+// Creates an empty, unanchored Set with default options. Never null unless
+// allocation fails.
+RE2_EXPORT void* re2_set_new(int32_t case_sensitive, int32_t dot_all) {
+  try {
+    RE2::Options options;
+    options.set_log_errors(false);
+    if (case_sensitive == 0) options.set_case_sensitive(false);
+    if (dot_all != 0) options.set_dot_nl(true);
+    return static_cast<void*>(
+        new (std::nothrow) RE2::Set(options, RE2::UNANCHORED));
+  } catch (...) {
+    return nullptr;
+  }
+}
+
+// Adds a pattern and returns its index (0-based, in add order), or -1 if the
+// pattern is invalid. On -1, up to `err_cap` bytes of RE2's diagnostic are
+// written into `err` (NUL-terminated). Adding is only valid before compile.
+RE2_EXPORT int32_t re2_set_add(void* handle, const char* pattern,
+                               int32_t pattern_len, char* err,
+                               int32_t err_cap) {
+  if (handle == nullptr) return -1;
+  try {
+    std::string error;
+    const int index = static_cast<RE2::Set*>(handle)->Add(
+        StringPiece(pattern, static_cast<size_t>(pattern_len)), &error);
+    if (index < 0 && err != nullptr && err_cap > 0) {
+      const int32_t n = static_cast<int32_t>(error.size()) < err_cap - 1
+                            ? static_cast<int32_t>(error.size())
+                            : err_cap - 1;
+      if (n > 0) std::memcpy(err, error.data(), static_cast<size_t>(n));
+      err[n] = '\0';
+    }
+    return index;
+  } catch (...) {
+    return -1;
+  }
+}
+
+// Compiles the added patterns into the automaton. 1 on success, 0 if it could
+// not compile (for example the combined program exceeded the memory budget).
+// Must be called once, after all Add calls and before any Match.
+RE2_EXPORT int32_t re2_set_compile(void* handle) {
+  if (handle == nullptr) return 0;
+  try {
+    return static_cast<RE2::Set*>(handle)->Compile() ? 1 : 0;
+  } catch (...) {
+    return 0;
+  }
+}
+
+// Matches `text` against the compiled Set, writing the indices that matched (in
+// ascending order) into `out` (up to `out_cap` entries). Returns the total
+// number of matches; if that exceeds `out_cap` the caller retries with a bigger
+// buffer. Returns -1 on error (including matching before compile).
+RE2_EXPORT int32_t re2_set_match(void* handle, const char* text,
+                                 int32_t text_len, int32_t* out,
+                                 int32_t out_cap) {
+  if (handle == nullptr) return -1;
+  try {
+    std::vector<int> matched;
+    if (!static_cast<RE2::Set*>(handle)->Match(
+            StringPiece(text, static_cast<size_t>(text_len)), &matched)) {
+      return 0;  // no matches
+    }
+    const int32_t total = static_cast<int32_t>(matched.size());
+    if (out != nullptr) {
+      const int32_t n = total < out_cap ? total : out_cap;
+      for (int32_t i = 0; i < n; i++) out[i] = matched[i];
+    }
+    return total;
+  } catch (...) {
+    return -1;
+  }
+}
+
+// Releases a handle from re2_set_new. Safe on a null handle.
+RE2_EXPORT void re2_set_free(void* handle) {
+  delete static_cast<RE2::Set*>(handle);
+}
 
 }  // extern "C"

@@ -1,3 +1,16 @@
+## 0.5.0
+
+- `Re2Set` matches many patterns against one input in a single linear pass.
+  Compile a list of patterns with `Re2Set.compile([...])` and `matches(input)`
+  returns the set of indices that fired, scanning the input once no matter how
+  many patterns there are. This is the rule-engine shape, a firewall, a log
+  classifier, a router, and it is exactly where a backtracking engine is worst:
+  N `RegExp`s mean N passes, each able to blow up, so the ReDoS exposure grows
+  with the ruleset, while a `Re2Set` stays linear and pattern-count independent.
+  Backed by RE2's own `RE2::Set`.
+- `example/ruleset.dart` runs a small WAF-style set and shows a request tripping
+  two rules at once.
+
 ## 0.4.0
 
 - `Re2.escape(String)` turns an arbitrary string into a pattern that matches it

@@ -120,6 +120,32 @@ text outside the Basic Multilingual Plane. `Re2` implements `Match` rather than
 named-group helpers (`namedGroup`, `groupNames`) are still there as methods on
 the returned match.
 
+## Many patterns, one pass
+
+When you test an input against a whole list of patterns, a rule engine, a
+firewall, a log classifier, `Re2Set` compiles them into one automaton and tells
+you which fired in a single scan:
+
+```dart
+final rules = Re2Set.compile([
+  r'(?i)union\s+select',  // 0
+  r'<script\b',           // 1
+  r'\.\./',               // 2
+]);
+try {
+  rules.matches('GET /..%2f..%2f');       // {2}
+  rules.matches('..%2f <script>');        // {1, 2}
+} finally {
+  rules.dispose();
+}
+```
+
+The returned indices are positions in the list you compiled. This is the one
+thing a backtracking engine cannot follow: with `RegExp` you would run N
+separate matches, each able to blow up, so the ReDoS exposure multiplies by the
+rule count. `Re2Set` stays linear in the input length and independent of how
+many patterns there are. `example/ruleset.dart` runs a small WAF-style set.
+
 ## Untrusted patterns
 
 Linear match time protects you from a hostile *input*. Two more things protect
