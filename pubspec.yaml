@@ -2,7 +2,7 @@ name: re2
 description: >-
   Linear-time regular expressions for Dart via Google's RE2 over FFI. Immune to
   catastrophic backtracking (ReDoS).
-version: 0.3.2
+version: 0.3.3
 repository: https://github.com/Yusufihsangorgel/re2
 issue_tracker: https://github.com/Yusufihsangorgel/re2/issues
 
@@ -15,9 +15,8 @@ topics:
 
 screenshots:
   - description: >-
-      Time to match /(a+)+$/ as the input grows: dart:core RegExp reaches 2866 m
-      s at 28 characters and would not finish at 30, while re2 stays flat, 1.7 m
-      s at 100,000.
+      Time to match /(a+)+$/ as input grows: dart:core RegExp hits 2866 ms at 28
+       characters, while re2 stays flat, 1.7 ms at 100,000.
     path: doc/architecture.png
 
 environment:
