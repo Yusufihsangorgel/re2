@@ -1,3 +1,18 @@
+## 0.3.1
+
+- `example/redos.dart` runs the comparison the README asserts, on your machine,
+  with both engines given the same pattern and the same input. On the classic
+  `(a+)+$` a 29-character input takes `dart:core` 2.77 s against re2's 30 us,
+  and every two further characters multiply the left side by about four.
+- It also times `^(\w+\s?)*$`, which is the kind of pattern written to
+  validate a name or a list of tags rather than a contrived one, and which is
+  no safer: 31 characters take 5.15 s.
+- `example/README.md` records something the usual advice gets wrong. Not every
+  nested quantifier is exploitable: the widely copied email pattern stays fast
+  on a long almost-matching address, because the literal dot between its loops
+  fixes where each repetition ends. The danger is ambiguity, two loops that can
+  claim the same characters, which is exactly what is hard to eyeball.
+
 ## 0.3.0
 
 - `Re2` now implements `Pattern` and `Re2Match` implements `Match`, so a `Re2`

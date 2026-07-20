@@ -25,6 +25,12 @@ Measured on this machine (Apple M-series, Dart 3.11), the classic
 
 RE2 stays linear; the backtracking engine does not.
 
+`dart run example/redos.dart` reproduces that table on your machine and adds a
+second pattern, `^(\w+\s?)*$`, the sort of thing written to validate a name or
+a tag list: 31 characters of input take it 5.15 s against re2's 25 us. It also
+shows the case the usual advice gets wrong, a nested quantifier that is not
+exploitable, and why.
+
 ![How re2 runs a match: Dart API to FFI to native RE2 automaton](https://raw.githubusercontent.com/Yusufihsangorgel/re2/main/doc/architecture.png)
 
 [dart-lang/sdk#61284]: https://github.com/dart-lang/sdk/issues/61284
