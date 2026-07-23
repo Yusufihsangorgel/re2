@@ -176,6 +176,21 @@ void main() {
         expect(e.source, '(a');
       }
     });
+
+    test('a diagnostic with an embedded NUL is not truncated', () {
+      // RE2's diagnostic quotes a slice of the source pattern, which can
+      // legitimately contain a NUL since this shim accepts arbitrary bytes.
+      // The message must be read by its exact byte length, not scanned for a
+      // terminator, or everything from the NUL onward is silently dropped.
+      final nul = String.fromCharCode(0);
+      final pattern = '(?P<$nul>x)';
+      try {
+        Re2(pattern);
+        fail('expected FormatException');
+      } on FormatException catch (e) {
+        expect(e.message, contains('(?P<$nul>'));
+      }
+    });
   });
 
   group('unsupported features are rejected at compile time', () {

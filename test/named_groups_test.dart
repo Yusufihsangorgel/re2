@@ -47,5 +47,15 @@ void main() {
       final m = re.firstMatch('word')!;
       expect(m.groupNames, isEmpty);
     });
+
+    test('a group name longer than the initial buffer round-trips', () {
+      // RE2 places no length limit on capture-group names; a name past the
+      // shim's initial 256-byte probe buffer must not be truncated.
+      final name = 'g' * 300;
+      final re = Re2('(?P<$name>x)');
+      addTearDown(re.dispose);
+      expect(re.firstMatch('x')!.namedGroup(name), 'x');
+      expect(re.firstMatch('x')!.groupNames, [name]);
+    });
   });
 }

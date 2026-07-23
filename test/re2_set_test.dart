@@ -5,9 +5,9 @@ void main() {
   group('Re2Set', () {
     test('returns the indices of the patterns that match, in order', () {
       final set = Re2Set.compile([
-        r'\d+',       // 0: digits
-        r'[a-z]+',    // 1: lowercase word
-        r'@',         // 2: at sign
+        r'\d+', // 0: digits
+        r'[a-z]+', // 1: lowercase word
+        r'@', // 2: at sign
       ]);
       try {
         expect(set.matches('abc'), {1});
@@ -71,6 +71,23 @@ void main() {
       );
     });
 
+    test('a diagnostic with an embedded NUL is not truncated', () {
+      // Same embedded-NUL diagnostic case as Re2's constructor, exercised
+      // through Re2Set.compile's separate error-reading path.
+      final nul = String.fromCharCode(0);
+      final pattern = '(?P<$nul>x)';
+      expect(
+        () => Re2Set.compile([pattern]),
+        throwsA(
+          isA<FormatException>().having(
+            (e) => e.message,
+            'message',
+            contains('(?P<$nul>'),
+          ),
+        ),
+      );
+    });
+
     test('using a disposed set throws', () {
       final set = Re2Set.compile([r'x']);
       set.dispose();
@@ -89,18 +106,17 @@ void main() {
       // against this input backtracks for seconds; the Set answers in well
       // under a frame. The assertion is on time, since that is the guarantee;
       // which rules match is beside the point.
-      final set = Re2Set.compile([
-        r'(a+)+\d$',
-        r'(x+x+)+y',
-        r'(\w+\s?)+#$',
-      ]);
+      final set = Re2Set.compile([r'(a+)+\d$', r'(x+x+)+y', r'(\w+\s?)+#$']);
       try {
         final hostile = 'a' * 64;
         final sw = Stopwatch()..start();
         set.matches(hostile);
         sw.stop();
-        expect(sw.elapsedMilliseconds, lessThan(100),
-            reason: 'a backtracking engine would take seconds here');
+        expect(
+          sw.elapsedMilliseconds,
+          lessThan(100),
+          reason: 'a backtracking engine would take seconds here',
+        );
       } finally {
         set.dispose();
       }

@@ -21,10 +21,7 @@ import 'package:re2/re2.dart';
 /// The first is the smallest thing that shows it. The second is the sort of
 /// thing that gets written to validate a name or a tag list, and it is no
 /// safer.
-const _cases = [
-  (r'(a+)+$', 'a', 'b'),
-  (r'^(\w+\s?)*$', 'x', '!'),
-];
+const _cases = [(r'(a+)+$', 'a', 'b'), (r'^(\w+\s?)*$', 'x', '!')];
 
 void main() {
   for (final (pattern, fill, tail) in _cases) {
@@ -46,8 +43,10 @@ void main() {
         linear.hasMatch(input);
         fast.stop();
 
-        print('${input.length.toString().padRight(8)}'
-            '${_time(slow).padRight(20)}${_time(fast)}');
+        print(
+          '${input.length.toString().padRight(8)}'
+          '${_time(slow).padRight(20)}${_time(fast)}',
+        );
 
         // Stop before the demo becomes the outage it is describing. Each two
         // characters past here multiply the left column by about four.
@@ -62,8 +61,10 @@ void main() {
       final fast = Stopwatch()..start();
       linear.hasMatch(huge);
       fast.stop();
-      print('${huge.length.toString().padRight(8)}'
-          '${'would not finish'.padRight(20)}${_time(fast)}');
+      print(
+        '${huge.length.toString().padRight(8)}'
+        '${'would not finish'.padRight(20)}${_time(fast)}',
+      );
     } finally {
       linear.dispose();
     }

@@ -96,11 +96,23 @@ RE2_EXPORT int32_t re2_ok(void* handle) {
   return static_cast<RE2*>(handle)->ok() ? 1 : 0;
 }
 
-// The compile error message as a NUL-terminated string, valid until the
-// handle is freed. Returns a static string when the handle is null.
+// The compile error message, valid until the handle is freed. The bytes are
+// exactly those RE2's own RegexpStatus::Text() produced, which can embed a
+// NUL (it may quote a slice of the original pattern, and this shim accepts
+// patterns with embedded NULs). The buffer happens to carry a trailing NUL
+// for convenience, but a caller must not rely on it as the terminator; pair
+// this with re2_error_length() and read exactly that many bytes.
 RE2_EXPORT const char* re2_error(void* handle) {
   if (handle == nullptr) return "out of memory";
   return static_cast<RE2*>(handle)->error().c_str();
+}
+
+// The exact byte length of the message re2_error() returns for the same
+// handle, so the caller never has to scan for a NUL terminator that may
+// appear before the message actually ends.
+RE2_EXPORT int32_t re2_error_length(void* handle) {
+  if (handle == nullptr) return static_cast<int32_t>(std::strlen("out of memory"));
+  return static_cast<int32_t>(static_cast<RE2*>(handle)->error().size());
 }
 
 // Number of capturing groups, excluding the whole match (group 0). Returns
@@ -269,10 +281,15 @@ RE2_EXPORT void* re2_set_new(int32_t case_sensitive, int32_t dot_all) {
 
 // Adds a pattern and returns its index (0-based, in add order), or -1 if the
 // pattern is invalid. On -1, up to `err_cap` bytes of RE2's diagnostic are
-// written into `err` (NUL-terminated). Adding is only valid before compile.
+// written into `err` (also NUL-terminated for convenience, but that byte can
+// legitimately appear before the end of the message -- the diagnostic can
+// quote a slice of the original pattern, and this shim accepts patterns with
+// embedded NULs), and the number of bytes actually written is stored in
+// `*err_len`, so the caller can read exactly that many bytes instead of
+// scanning for a terminator. Adding is only valid before compile.
 RE2_EXPORT int32_t re2_set_add(void* handle, const char* pattern,
                                int32_t pattern_len, char* err,
-                               int32_t err_cap) {
+                               int32_t err_cap, int32_t* err_len) {
   if (handle == nullptr) return -1;
   try {
     std::string error;
@@ -284,6 +301,7 @@ RE2_EXPORT int32_t re2_set_add(void* handle, const char* pattern,
                             : err_cap - 1;
       if (n > 0) std::memcpy(err, error.data(), static_cast<size_t>(n));
       err[n] = '\0';
+      if (err_len != nullptr) *err_len = n;
     }
     return index;
   } catch (...) {

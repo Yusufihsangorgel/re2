@@ -41,9 +41,16 @@ external int re2QuoteMeta(
 @Native<Int32 Function(Pointer<Void>)>(symbol: 're2_ok')
 external int re2Ok(Pointer<Void> handle);
 
-/// The compile error message, valid until the handle is freed.
+/// The compile error message, valid until the handle is freed. The bytes may
+/// contain an embedded NUL, so read exactly [re2ErrorLength] bytes rather
+/// than treating this as a NUL-terminated string.
 @Native<Pointer<Utf8Char> Function(Pointer<Void>)>(symbol: 're2_error')
 external Pointer<Utf8Char> re2Error(Pointer<Void> handle);
+
+/// The exact byte length of the message [re2Error] returns for the same
+/// handle.
+@Native<Int32 Function(Pointer<Void>)>(symbol: 're2_error_length')
+external int re2ErrorLength(Pointer<Void> handle);
 
 /// Number of capturing groups, excluding the whole match (group 0).
 @Native<Int32 Function(Pointer<Void>)>(symbol: 're2_num_groups')
@@ -169,16 +176,26 @@ final Pointer<NativeFinalizerFunction> re2FreeFunction =
 external Pointer<Void> re2SetNew(int caseSensitive, int dotAll);
 
 /// Adds a pattern; returns its 0-based index or -1, writing the error into
-/// [err] on failure.
-@Native<Int32 Function(Pointer<Void>, Pointer<Uint8>, Int32, Pointer<Uint8>, Int32)>(
-  symbol: 're2_set_add',
-)
+/// [err] on failure and the number of bytes actually written into
+/// [errLength] (the error text may contain an embedded NUL, so read exactly
+/// that many bytes rather than scanning for a terminator).
+@Native<
+  Int32 Function(
+    Pointer<Void>,
+    Pointer<Uint8>,
+    Int32,
+    Pointer<Uint8>,
+    Int32,
+    Pointer<Int32>,
+  )
+>(symbol: 're2_set_add')
 external int re2SetAdd(
   Pointer<Void> handle,
   Pointer<Uint8> pattern,
   int patternLength,
   Pointer<Uint8> err,
   int errCapacity,
+  Pointer<Int32> errLength,
 );
 
 /// Compiles the added patterns; 1 on success, 0 on failure.
@@ -187,9 +204,9 @@ external int re2SetCompile(Pointer<Void> handle);
 
 /// Matches [text], writing matched indices into [out]; returns the total match
 /// count (which may exceed [outCapacity]), or -1 on error.
-@Native<Int32 Function(Pointer<Void>, Pointer<Uint8>, Int32, Pointer<Int32>, Int32)>(
-  symbol: 're2_set_match',
-)
+@Native<
+  Int32 Function(Pointer<Void>, Pointer<Uint8>, Int32, Pointer<Int32>, Int32)
+>(symbol: 're2_set_match')
 external int re2SetMatch(
   Pointer<Void> handle,
   Pointer<Uint8> text,

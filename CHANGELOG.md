@@ -1,3 +1,30 @@
+## 0.5.1
+
+- Fix a silent encoding bug: every FFI call site in `Re2` and `Re2Set` turned
+  a Dart `String` into bytes with `utf8.encode`, which replaces an unpaired
+  UTF-16 surrogate (a legal Dart string code unit on its own, for instance
+  `String.fromCharCode(0xD800)`) with the UTF-8 bytes for U+FFFD before RE2
+  ever saw the text. Two strings differing only in which lone surrogate they
+  carried, or one with a lone surrogate against one with a literal U+FFFD,
+  encoded to identical bytes and matched each other, and `Re2.escape` stopped
+  being injective: `Re2.escape(s1) == Re2.escape(s2)` for two different
+  `s1`/`s2`, and `Re2(Re2.escape(s1)).hasMatch(s2)` was `true`. Both are the
+  kind of input that shows up in the untrusted-input case this package is for,
+  such as a malformed `\uD800`-style JSON escape.
+- Encoding now goes through a small WTF-8 codec instead
+  (`lib/src/wtf8.dart`): a lone surrogate gets its own 3-byte sequence rather
+  than being substituted, and the encoding is byte-for-byte identical to
+  `utf8.encode` for every well-formed string. No public API change.
+- Fix a NUL-truncation bug in compile-error diagnostics: `re2_error()` and
+  `re2_set_add()`'s error output were read back as NUL-terminated C strings,
+  but RE2's own diagnostic text can quote a slice of the original pattern and
+  that slice can itself contain an embedded NUL (this package accepts
+  patterns with embedded NULs). A `FormatException` message could silently
+  cut off mid-sentence. The native shim now also reports the exact byte
+  length (`re2_error_length()`, and an `errLength` out-param on
+  `re2_set_add()`), and the Dart side reads exactly that many bytes instead of
+  scanning for a terminator. No public API change.
+
 ## 0.5.0
 
 - `Re2Set` matches many patterns against one input in a single linear pass.

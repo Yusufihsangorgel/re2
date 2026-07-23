@@ -1,9 +1,8 @@
 import 'dart:convert';
 import 'dart:ffi';
 
-import 'package:ffi/ffi.dart';
-
 import 'bindings.dart';
+import 'wtf8.dart';
 
 /// Matches many patterns against one input in a single linear pass.
 ///
@@ -39,8 +38,7 @@ import 'bindings.dart';
 final class Re2Set implements Finalizable {
   Re2Set._(this._handle, this.patternCount);
 
-  static final NativeFinalizer _finalizer =
-      NativeFinalizer(re2SetFreeFunction);
+  static final NativeFinalizer _finalizer = NativeFinalizer(re2SetFreeFunction);
 
   /// Compiles [patterns] into a set, ready for [matches].
   ///
@@ -65,16 +63,23 @@ final class Re2Set implements Finalizable {
     try {
       const errCap = 256;
       final errPtr = allocateBytes(errCap);
+      final errLenPtr = allocateInt32(1);
       try {
         for (var i = 0; i < patterns.length; i++) {
-          final bytes = utf8.encode(patterns[i]);
+          final bytes = encodeWtf8(patterns[i]);
           final patternPtr = allocateBytes(bytes.length);
           try {
             patternPtr.asTypedList(bytes.length).setAll(0, bytes);
-            final index =
-                re2SetAdd(handle, patternPtr, bytes.length, errPtr, errCap);
+            final index = re2SetAdd(
+              handle,
+              patternPtr,
+              bytes.length,
+              errPtr,
+              errCap,
+              errLenPtr,
+            );
             if (index < 0) {
-              final message = errPtr.cast<Utf8>().toDartString();
+              final message = utf8.decode(errPtr.asTypedList(errLenPtr.value));
               throw FormatException(
                 'Invalid RE2 pattern at index $i: $message',
                 patterns[i],
@@ -86,6 +91,7 @@ final class Re2Set implements Finalizable {
         }
       } finally {
         freeBytes(errPtr);
+        freeInt32(errLenPtr);
       }
 
       if (re2SetCompile(handle) == 0) {
@@ -122,7 +128,7 @@ final class Re2Set implements Finalizable {
   /// Throws [StateError] if this set has been disposed.
   Set<int> matches(String input) {
     _checkNotDisposed();
-    final bytes = utf8.encode(input);
+    final bytes = encodeWtf8(input);
     final textPtr = allocateBytes(bytes.length);
     try {
       textPtr.asTypedList(bytes.length).setAll(0, bytes);

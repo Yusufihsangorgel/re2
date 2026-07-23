@@ -10,8 +10,7 @@ void main() {
   final email = Re2(r'[\w.+-]+@[\w.-]+');
   final digits = Re2(r'\d{12,}');
   try {
-    const line =
-        'user bob@example.com paid with 4111111111111111 at checkout';
+    const line = 'user bob@example.com paid with 4111111111111111 at checkout';
     // replaceAll rewrites every match; the rewrite can reference groups with
     // \1..\9, but here a fixed mask is enough.
     final noEmail = email.replaceAll(line, '<email>');

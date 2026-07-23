@@ -28,8 +28,10 @@ void main() {
       final regexp = RegExp(r'(\w)(\d)');
       const input = 'a1 b2 c3';
       String swap(Match m) => '${m.group(2)}${m.group(1)}';
-      expect(input.replaceAllMapped(re2, swap),
-          input.replaceAllMapped(regexp, swap));
+      expect(
+        input.replaceAllMapped(re2, swap),
+        input.replaceAllMapped(regexp, swap),
+      );
       re2.dispose();
     });
 
@@ -63,10 +65,10 @@ void main() {
       final re2 = Re2(r'\d+');
       final regexp = RegExp(r'\d+');
       String join(Pattern p) => 'x12y3z'.splitMapJoin(
-            p,
-            onMatch: (m) => '[${m.group(0)}]',
-            onNonMatch: (s) => s.toUpperCase(),
-          );
+        p,
+        onMatch: (m) => '[${m.group(0)}]',
+        onNonMatch: (s) => s.toUpperCase(),
+      );
       expect(join(re2), join(regexp));
       re2.dispose();
     });

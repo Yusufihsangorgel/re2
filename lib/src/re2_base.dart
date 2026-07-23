@@ -1,10 +1,9 @@
 import 'dart:convert';
 import 'dart:ffi';
 
-import 'package:ffi/ffi.dart';
-
 import 'bindings.dart';
 import 're2_match.dart';
+import 'wtf8.dart';
 
 /// A compiled RE2 regular expression.
 ///
@@ -61,7 +60,7 @@ final class Re2 implements Finalizable, Pattern {
     if (maxBytes != null && maxBytes <= 0) {
       throw ArgumentError.value(maxBytes, 'maxBytes', 'must be positive');
     }
-    final patternBytes = utf8.encode(pattern);
+    final patternBytes = encodeWtf8(pattern);
     final patternPtr = allocateBytes(patternBytes.length);
     try {
       patternPtr.asTypedList(patternBytes.length).setAll(0, patternBytes);
@@ -81,7 +80,10 @@ final class Re2 implements Finalizable, Pattern {
       throw StateError('RE2 could not allocate native memory for the pattern');
     }
     if (re2Ok(_handle) == 0) {
-      final message = re2Error(_handle).cast<Utf8>().toDartString();
+      final errorLength = re2ErrorLength(_handle);
+      final message = utf8.decode(
+        re2Error(_handle).cast<Uint8>().asTypedList(errorLength),
+      );
       re2Free(_handle);
       _handle = nullptr;
       throw FormatException('Invalid RE2 pattern: $message', pattern);
@@ -122,7 +124,7 @@ final class Re2 implements Finalizable, Pattern {
   /// nothing else: `escape('a.b*')` is a pattern for the four-character string
   /// `a.b*`, not "a, any char, b, zero or more".
   static String escape(String literal) {
-    final bytes = utf8.encode(literal);
+    final bytes = encodeWtf8(literal);
     final textPtr = allocateBytes(bytes.length);
     try {
       textPtr.asTypedList(bytes.length).setAll(0, bytes);
@@ -136,7 +138,7 @@ final class Re2 implements Finalizable, Pattern {
       final outPtr = allocateBytes(needed + 1);
       try {
         re2QuoteMeta(textPtr, bytes.length, outPtr, needed + 1);
-        return utf8.decode(outPtr.asTypedList(needed));
+        return decodeWtf8(outPtr.asTypedList(needed));
       } finally {
         freeBytes(outPtr);
       }
@@ -161,7 +163,7 @@ final class Re2 implements Finalizable, Pattern {
   /// Throws [StateError] if this instance has been disposed.
   bool hasMatch(String input) {
     _checkNotDisposed();
-    final bytes = utf8.encode(input);
+    final bytes = encodeWtf8(input);
     final ptr = allocateBytes(bytes.length);
     try {
       ptr.asTypedList(bytes.length).setAll(0, bytes);
@@ -176,7 +178,7 @@ final class Re2 implements Finalizable, Pattern {
   /// Throws [StateError] if this instance has been disposed.
   Re2Match? firstMatch(String input) {
     _checkNotDisposed();
-    final bytes = utf8.encode(input);
+    final bytes = encodeWtf8(input);
     final textLength = bytes.length;
     final slots = _groupCount + 1;
     final ptr = allocateBytes(textLength);
@@ -232,8 +234,8 @@ final class Re2 implements Finalizable, Pattern {
 
   String _replace(String input, String rewrite, {required bool global}) {
     _checkNotDisposed();
-    final textBytes = utf8.encode(input);
-    final rewriteBytes = utf8.encode(rewrite);
+    final textBytes = encodeWtf8(input);
+    final rewriteBytes = encodeWtf8(rewrite);
     final textPtr = allocateBytes(textBytes.length);
     final rewritePtr = allocateBytes(rewriteBytes.length);
     final outLength = allocateInt32(1);
@@ -255,7 +257,7 @@ final class Re2 implements Finalizable, Pattern {
         throw StateError('RE2 replace failed');
       }
       try {
-        return utf8.decode(resultPtr.asTypedList(outLength.value));
+        return decodeWtf8(resultPtr.asTypedList(outLength.value));
       } finally {
         re2FreeString(resultPtr);
       }
@@ -286,7 +288,7 @@ final class Re2 implements Finalizable, Pattern {
     _checkNotDisposed();
     RangeError.checkValueInInterval(start, 0, input.length, 'start');
 
-    final bytes = utf8.encode(input);
+    final bytes = encodeWtf8(input);
     final textLength = bytes.length;
     final slots = _groupCount + 1;
     final ptr = allocateBytes(textLength);
@@ -403,22 +405,25 @@ final class Re2 implements Finalizable, Pattern {
   Map<String, int> _readNamedGroups(Pointer<Void> handle) {
     final count = re2NumNamedGroups(handle);
     if (count == 0) return const {};
-    const capacity = 256;
+    const initialCapacity = 256;
     final result = <String, int>{};
-    final nameBuffer = allocateBytes(capacity);
+    var capacity = initialCapacity;
+    var nameBuffer = allocateBytes(capacity);
     final indexOut = allocateInt32(1);
     try {
       for (var i = 0; i < count; i++) {
-        final length = re2NamedGroupAt(
-          handle,
-          i,
-          nameBuffer,
-          capacity,
-          indexOut,
-        );
+        var length = re2NamedGroupAt(handle, i, nameBuffer, capacity, indexOut);
         if (length < 0) continue;
-        final copied = length < capacity - 1 ? length : capacity - 1;
-        result[utf8.decode(nameBuffer.asTypedList(copied))] = indexOut.value;
+        if (length >= capacity) {
+          // The name did not fit; re2_named_group_at still returns the full
+          // length, so retry once with a buffer sized to hold it exactly.
+          freeBytes(nameBuffer);
+          capacity = length + 1;
+          nameBuffer = allocateBytes(capacity);
+          length = re2NamedGroupAt(handle, i, nameBuffer, capacity, indexOut);
+          if (length < 0) continue;
+        }
+        result[utf8.decode(nameBuffer.asTypedList(length))] = indexOut.value;
       }
     } finally {
       freeBytes(nameBuffer);

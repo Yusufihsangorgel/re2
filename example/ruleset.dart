@@ -47,7 +47,9 @@ void main() {
     rules.dispose();
   }
 
-  print('\nEvery line was one linear scan over the request, not one scan per '
-      'rule.\nThe last request tripped two rules; matches() returns the whole '
-      'set.');
+  print(
+    '\nEvery line was one linear scan over the request, not one scan per '
+    'rule.\nThe last request tripped two rules; matches() returns the whole '
+    'set.',
+  );
 }
