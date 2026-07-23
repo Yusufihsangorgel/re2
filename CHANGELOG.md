@@ -1,3 +1,11 @@
+## 0.5.2
+
+- Rework the README around how RE2 actually works: a log-scale benchmark of
+  `(a+)+$` where the backtracking engine reaches 2.75 s at 28 characters while
+  re2 stays near 2 microseconds, and a diagram of why (a backtracking engine
+  searches every way to split the input, RE2 walks a state machine once). No
+  code change.
+
 ## 0.5.1
 
 - Fix a silent encoding bug: every FFI call site in `Re2` and `Re2Set` turned
