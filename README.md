@@ -126,11 +126,17 @@ final pair = Re2(r'(\w)(\d)');
 print('a1 b2'.replaceAllMapped(pair, (m) => '${m[2]}${m[1]}')); // 1a 2b
 ```
 
-The results match `dart:core`'s `RegExp` exactly, including UTF-16 offsets for
-text outside the Basic Multilingual Plane. `Re2` implements `Match` rather than
-`RegExpMatch` because the latter types its `pattern` getter as `RegExp`; the
-named-group helpers (`namedGroup`, `groupNames`) are still there as methods on
-the returned match.
+Match offsets are UTF-16 code-unit indices, the convention `RegExpMatch` uses,
+and they stay correct across astral (non-BMP) characters, which count as two
+units, so `input.substring(match.start, match.end)` is always the matched text.
+On ASCII and BMP input the results agree with `dart:core`'s `RegExp` for the
+syntax both engines share. One difference is worth knowing: RE2 matches whole
+Unicode code points, so on non-BMP input a single-character construct like `.`
+(or a class like `[^a]`) matches the whole astral code point, the way
+`RegExp(unicode: true)` does, where a default `RegExp` matches one UTF-16 code
+unit at a time. `Re2` implements `Match` rather than `RegExpMatch` because the
+latter types its `pattern` getter as `RegExp`; the named-group helpers
+(`namedGroup`, `groupNames`) are still there as methods on the returned match.
 
 ## Many patterns, one pass
 

@@ -1,3 +1,34 @@
+## 1.0.0
+
+First stable release. From here the public API follows semantic versioning: a
+breaking change will not land without a major-version bump.
+
+- Make `Re2Match`'s constructor private. It took the match's internal
+  representation as positional arguments (parallel start and end lists plus a
+  name-to-index map), so leaving it public would have frozen that representation
+  into the API and let outside code build a match with arbitrary internal state.
+  Nothing outside the package ever constructed one: `Re2.firstMatch` and
+  `Re2.allMatches` still build every `Re2Match`, and its methods and getters
+  (`group`, `namedGroup`, `groupNames`, `operator []`, `start`, `end` and the
+  rest) are unchanged.
+- Narrow `Re2Match.pattern` from `Pattern` to `Re2`. The value there is always
+  the `Re2` that produced the match, so callers reach its members without a
+  cast. This mirrors `RegExpMatch`, which narrows its own `pattern` to `RegExp`.
+  Narrowing a getter's return type is a breaking change, so it is done now
+  rather than after the freeze.
+- Correct an overstated parity claim in the docs. The README and the 0.3.0
+  changelog entry said results "match `dart:core`'s `RegExp` exactly, including
+  UTF-16 offsets outside the Basic Multilingual Plane", and the `allMatches`
+  doc comment claimed the same for its results. The offset half holds: offsets
+  are UTF-16 indices, astral characters count as two units, and
+  `substring(match.start, match.end)` is always the matched text. The parity
+  half was too strong. RE2 matches whole Unicode code points, the way
+  `RegExp(unicode: true)` does, so on non-BMP input a single-character construct
+  like `.` matches a whole astral code point where a default `RegExp` matches
+  one UTF-16 code unit. On ASCII and BMP input the two agree. The README now
+  states the difference, and the `allMatches` doc comment no longer claims exact
+  parity.
+
 ## 0.5.2
 
 - Rework the README around how RE2 actually works: a log-scale benchmark of

@@ -2,8 +2,9 @@ import 'dart:convert';
 import 'dart:ffi';
 
 import 'bindings.dart';
-import 're2_match.dart';
 import 'wtf8.dart';
+
+part 're2_match.dart';
 
 /// A compiled RE2 regular expression.
 ///
@@ -279,7 +280,8 @@ final class Re2 implements Finalizable, Pattern {
   /// A [start] that falls in the middle of a surrogate pair is rounded
   /// forward to the next code point, so that character is skipped; in the
   /// usual case ([start] of 0, or the end of a previous match) [start] is
-  /// always on a code-point boundary and results match `RegExp` exactly.
+  /// already on a code-point boundary, so no rounding happens and the search
+  /// begins exactly where `RegExp.allMatches` would.
   ///
   /// Throws [RangeError] if [start] is outside `0..input.length`, and
   /// [StateError] if this instance has been disposed.
@@ -393,7 +395,7 @@ final class Re2 implements Finalizable, Pattern {
       utf16[i] = cursor.toUtf16(byteOffsets[i]);
     }
 
-    return Re2Match(
+    return Re2Match._(
       this,
       input,
       [for (var i = 0; i < slots; i++) utf16[i * 2]],

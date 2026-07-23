@@ -21,6 +21,5 @@
 /// ```
 library;
 
-export 'src/re2_base.dart' show Re2;
-export 'src/re2_match.dart' show Re2Match;
+export 'src/re2_base.dart' show Re2, Re2Match;
 export 'src/re2_set.dart' show Re2Set;

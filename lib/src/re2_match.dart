@@ -1,3 +1,5 @@
+part of 're2_base.dart';
+
 /// A single match produced by [Re2.firstMatch] or [Re2.allMatches].
 ///
 /// This is a [Match], so it works everywhere the `String` API returns matches
@@ -8,11 +10,11 @@
 /// [input], the same convention `RegExpMatch` uses, so
 /// `input.substring(match.start, match.end)` is the matched text.
 final class Re2Match implements Match {
-  Re2Match(this.pattern, this.input, this._starts, this._ends, this._names);
+  Re2Match._(this.pattern, this.input, this._starts, this._ends, this._names);
 
   /// The [Re2] this match was produced by.
   @override
-  final Pattern pattern;
+  final Re2 pattern;
 
   /// The input string this match was found in.
   @override
