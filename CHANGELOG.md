@@ -1,4 +1,4 @@
-## Unreleased
+## 1.0.1
 
 - Correct the 1,000,000-character figure in the README. It read 1.9
   milliseconds, and no committed artifact produced that number:
