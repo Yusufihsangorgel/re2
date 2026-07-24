@@ -5,8 +5,37 @@
   `bench/bench.dart` stopped at 100,000 characters, and the
   1,000,000-character test asserts a time bound without printing a time. The
   benchmark now runs the 1,000,000-character case as its last ReDoS row, and
-  the README quotes what it prints, 5.9 milliseconds. No API or behaviour
-  change.
+  the README quotes what it prints, about 6 milliseconds. No API or behaviour
+  change. (That row is a single shot and lands between 5.2 and 6.5
+  milliseconds across runs here, so it is quoted to the nearest millisecond
+  rather than the 5.9 this entry first claimed.)
+- Correct the `re2` figure for the 28-character case in the README. It read 2
+  microseconds, and nothing measurable produced it. The row `bench/bench.dart`
+  printed is the first `hasMatch` in the process, which costs a few hundred
+  microseconds because it pays a one-time warm-up; a call in steady state
+  costs about 0.17 microseconds. The 2 came from `doc/benchmark.png` and sat
+  between the two, matching neither. The benchmark now prints both, labelled
+  `re2 (first call)` and `re2 (warm loop)`, the warm one measured with the same
+  loop-and-divide the benign section already used, and the README quotes both
+  and names the reason for the gap. The warm loop runs after the single-shot
+  rows: run earlier it warms them, and the 100,000- and 1,000,000-character
+  rows then measure something else. The warm-up is not the dynamic library,
+  which is loaded, and the pattern compiled, by the untimed constructor.
+- Correct the `dart:core` figure in the same sentence. It read 2.75 seconds,
+  which came from the chart and not from the benchmark; `bench/bench.dart`
+  prints about 3 seconds for that row.
+- Remove `doc/benchmark.png` and its pub.dev screenshot entry. The chart drew
+  seven values of `n` and called every point a real median measurement, but no
+  committed code produced any of them, and no such code has ever been in this
+  repository. Its flat "2 us" line matched nothing measurable, its "1.3 million
+  times faster" followed from that line, and its caption still carried the 1.9
+  milliseconds the first entry above retracts. A chart this repository cannot
+  regenerate is the same defect as a number it cannot, so it is gone rather
+  than redrawn into figures that would drift again. What it showed is in
+  `bench/bench.dart`, which anyone can run.
+- Quote the benign FFI overhead as a bit under 2x rather than roughly 2x. It
+  measures 1.7x to 1.8x now that the ReDoS section warms the shared match path
+  before the benign loop runs.
 
 ## 1.0.0
 

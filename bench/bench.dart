@@ -36,13 +36,13 @@ void _redos() {
   );
 
   // RE2: linear. The same tiny input, then two that are thousands of times
-  // longer. The 1,000,000-character row is the figure the README quotes.
+  // longer. The README quotes these rows.
   final re = Re2(pattern);
   final smallWatch = Stopwatch()..start();
   re.hasMatch(smallInput);
   smallWatch.stop();
   print(
-    're2               n=$evilSmall      ${smallWatch.elapsedMicroseconds} us',
+    're2 (first call)  n=$evilSmall      ${smallWatch.elapsedMicroseconds} us',
   );
 
   const evilLarge = 100000;
@@ -58,6 +58,24 @@ void _redos() {
   re.hasMatch(hugeInput);
   hugeWatch.stop();
   print('re2               n=$evilHuge ${hugeWatch.elapsedMicroseconds} us');
+
+  // Every row above is a single shot, and the first of them carries a one-time
+  // warm-up that has nothing to do with n: it costs roughly a thousand times
+  // the second call on the same input. (The dynamic library is not part of
+  // that. It is loaded, and the pattern compiled, by the Re2 constructor
+  // above, which is not timed.) Averaging over a loop, the way _benign does,
+  // gives what a call costs once the warm-up is paid. It runs last because
+  // running it earlier would warm the rows above and change what they mean.
+  const warmIterations = 200000;
+  final warmWatch = Stopwatch()..start();
+  for (var i = 0; i < warmIterations; i++) {
+    re.hasMatch(smallInput);
+  }
+  warmWatch.stop();
+  print(
+    're2 (warm loop)   n=$evilSmall      '
+    '${(warmWatch.elapsedMicroseconds / warmIterations).toStringAsFixed(3)} us/op',
+  );
   re.dispose();
 
   final speedup =
@@ -65,7 +83,10 @@ void _redos() {
       (smallWatch.elapsedMicroseconds == 0
           ? 1
           : smallWatch.elapsedMicroseconds);
-  print('speedup at n=$evilSmall: ~${speedup.round()}x (and unbounded beyond)');
+  print(
+    'speedup at n=$evilSmall: ~${speedup.round()}x on the first call '
+    '(and unbounded beyond)',
+  );
 }
 
 void _benign() {

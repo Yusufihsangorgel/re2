@@ -11,16 +11,17 @@ Here is the whole reason the package exists, in one measurement. The pattern is
 `(a+)+$`, run against a string of `n` letter-`a`s followed by one character that
 does not match. Both engines get the identical pattern and input.
 
-![Match time for the pattern a-plus-plus on a log scale: Dart's built-in RegExp climbs exponentially to 2.75 seconds at 28 characters, while re2 stays flat near 2 microseconds](https://raw.githubusercontent.com/Yusufihsangorgel/re2/main/doc/benchmark.png)
-
-At 28 characters, `dart:core`'s `RegExp` takes 2.75 seconds. `re2` takes 2
-microseconds. Add one more character and the backtracking engine doubles again;
-`re2` does not move. It matches 1,000,000 `a`s in 5.9 milliseconds, which
-`dart run bench/bench.dart` prints as its last ReDoS row. This is the ReDoS
-class of bug, and it has frozen real Dart apps: [dart-lang/sdk#61284] hung an
-app on iOS with an ordinary URL pattern. `dart run example/redos.dart`
-reproduces the shape on your machine and adds a second pattern, `^(\w+\s?)*$`,
-the kind you would write to validate a name or a tag list.
+At 28 characters, `dart:core`'s `RegExp` takes about 3 seconds. `re2` takes a
+few hundred microseconds on the first call in a process and about 0.17
+microseconds per call in steady state; that gap is one-time warm-up, not
+anything about the input. Add one more character and the backtracking engine
+doubles again; `re2` does not move. It matches 1,000,000 `a`s in about 6
+milliseconds. `dart run bench/bench.dart` prints all four numbers, and they
+shift a little from run to run. This is the ReDoS class of bug, and it has
+frozen real Dart apps: [dart-lang/sdk#61284] hung an app on iOS with an
+ordinary URL pattern. `dart run example/redos.dart` reproduces the shape on
+your machine and adds a second pattern, `^(\w+\s?)*$`, the kind you would
+write to validate a name or a tag list.
 
 [dart-lang/sdk#61284]: https://github.com/dart-lang/sdk/issues/61284
 
@@ -55,7 +56,7 @@ Read this before reaching for it.
 
 - The point is a time bound on untrusted input, not raw speed. On ordinary
   patterns and input, `dart:core`'s `RegExp` is usually faster: crossing the
-  FFI boundary and marshalling the string costs roughly 2x here. Use `re2`
+  FFI boundary and marshalling the string costs a bit under 2x here. Use `re2`
   where the pattern or the input is not under your control, and keep `RegExp`
   everywhere else.
 - RE2 does not support backreferences (`\1`) or lookaround (`(?=...)`,

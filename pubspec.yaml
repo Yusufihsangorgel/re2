@@ -15,10 +15,6 @@ topics:
 
 screenshots:
   - description: >-
-      Match time for the pattern (a+)+$ on a log scale: Dart's RegExp climbs to
-      2.75 s at 28 characters while re2 stays flat near 2 microseconds.
-    path: doc/benchmark.png
-  - description: >-
       Why re2 stays linear: a backtracking engine tries 2^(n-1) ways to split
       the input, while RE2 makes one left-to-right pass over a state machine.
     path: doc/mechanism.png
