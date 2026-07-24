@@ -32,17 +32,17 @@ void _redos() {
   dartRe.hasMatch(smallInput);
   dartWatch.stop();
   print(
-    'dart:core RegExp  n=$evilSmall     ${dartWatch.elapsedMicroseconds} us',
+    'dart:core RegExp  n=$evilSmall      ${dartWatch.elapsedMicroseconds} us',
   );
 
-  // RE2: linear. The same tiny input, then one nearly four thousand times
-  // longer, both finish in microseconds.
+  // RE2: linear. The same tiny input, then two that are thousands of times
+  // longer. The 1,000,000-character row is the figure the README quotes.
   final re = Re2(pattern);
   final smallWatch = Stopwatch()..start();
   re.hasMatch(smallInput);
   smallWatch.stop();
   print(
-    're2               n=$evilSmall     ${smallWatch.elapsedMicroseconds} us',
+    're2               n=$evilSmall      ${smallWatch.elapsedMicroseconds} us',
   );
 
   const evilLarge = 100000;
@@ -50,7 +50,14 @@ void _redos() {
   final largeWatch = Stopwatch()..start();
   re.hasMatch(largeInput);
   largeWatch.stop();
-  print('re2               n=$evilLarge ${largeWatch.elapsedMicroseconds} us');
+  print('re2               n=$evilLarge  ${largeWatch.elapsedMicroseconds} us');
+
+  const evilHuge = 1000000;
+  final hugeInput = 'a' * evilHuge + '!';
+  final hugeWatch = Stopwatch()..start();
+  re.hasMatch(hugeInput);
+  hugeWatch.stop();
+  print('re2               n=$evilHuge ${hugeWatch.elapsedMicroseconds} us');
   re.dispose();
 
   final speedup =

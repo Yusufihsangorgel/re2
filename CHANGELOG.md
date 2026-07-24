@@ -1,3 +1,13 @@
+## Unreleased
+
+- Correct the 1,000,000-character figure in the README. It read 1.9
+  milliseconds, and no committed artifact produced that number:
+  `bench/bench.dart` stopped at 100,000 characters, and the
+  1,000,000-character test asserts a time bound without printing a time. The
+  benchmark now runs the 1,000,000-character case as its last ReDoS row, and
+  the README quotes what it prints, 5.9 milliseconds. No API or behaviour
+  change.
+
 ## 1.0.0
 
 First stable release. From here the public API follows semantic versioning: a

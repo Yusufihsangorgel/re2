@@ -3,8 +3,12 @@
 // back to UTF-16 string indices. Every entry point is `extern "C"` and takes
 // explicit lengths (never NUL-terminated), so embedded NULs and binary text
 // pass through unharmed. No C++ exception is allowed to cross the boundary:
-// each function catches everything and reports failure through its return
-// value, exactly as the blake3_ffi and simdjson_dart shims do.
+// every entry point that runs code able to throw -- a match, a compile, an
+// allocation -- wraps its body in `try`/`catch (...)` and reports failure
+// through its return value, exactly as the blake3_ffi and simdjson_dart shims
+// do. The rest carry no `catch` because nothing in them can throw: they are
+// accessors that read a non-throwing RE2 getter behind a null check, and
+// deallocators that call `std::free` or `delete`.
 
 #include <cstdint>
 #include <cstdlib>

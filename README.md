@@ -15,9 +15,10 @@ does not match. Both engines get the identical pattern and input.
 
 At 28 characters, `dart:core`'s `RegExp` takes 2.75 seconds. `re2` takes 2
 microseconds. Add one more character and the backtracking engine doubles again;
-`re2` does not move. It matches 1,000,000 `a`s in 1.9 milliseconds. This is the
-ReDoS class of bug, and it has frozen real Dart apps: [dart-lang/sdk#61284]
-hung an app on iOS with an ordinary URL pattern. `dart run example/redos.dart`
+`re2` does not move. It matches 1,000,000 `a`s in 5.9 milliseconds, which
+`dart run bench/bench.dart` prints as its last ReDoS row. This is the ReDoS
+class of bug, and it has frozen real Dart apps: [dart-lang/sdk#61284] hung an
+app on iOS with an ordinary URL pattern. `dart run example/redos.dart`
 reproduces the shape on your machine and adds a second pattern, `^(\w+\s?)*$`,
 the kind you would write to validate a name or a tag list.
 
