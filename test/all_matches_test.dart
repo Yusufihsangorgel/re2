@@ -39,6 +39,26 @@ void main() {
       );
     });
 
+    test('an empty match steps over an astral character in one go', () {
+      // The case above is all ASCII, where advancing by a code point and
+      // advancing by one are the same thing. An emoji is two UTF-16 units, so
+      // it separates them: stepping by one would land between the surrogates
+      // and yield an extra match at 2.
+      //
+      // Dart's RegExp does exactly that, which is why this one is not compared
+      // against it: RegExp(r'x*').allMatches('a\u{1F600}b') gives
+      // 0, 1, 2, 3, 4.
+      final re = Re2(r'x*');
+      addTearDown(re.dispose);
+
+      expect(re.allMatches('a\u{1F600}b').map((m) => m.start).toList(), [
+        0,
+        1,
+        3,
+        4,
+      ]);
+    });
+
     test('an all-empty pattern matches at every position', () {
       final re = Re2('');
       addTearDown(re.dispose);
