@@ -62,6 +62,28 @@ void main(List<String> args) async {
       // defined unconditionally rather than gated on the target.
       defines: {'NOMINMAX': null},
       language: Language.cpp,
+      // RE2 is C++, and on Android the toolchain links the standard library
+      // dynamically by default: the shim comes out with a DT_NEEDED on
+      // libc++_shared.so, which nothing puts in the APK. The build stays
+      // green and the first Re2(...) throws `dlopen failed: library
+      // "libc++_shared.so" not found` on the device. Linking it statically
+      // makes the shim self-contained. Only Android defaults to the shared
+      // form, so the other targets are left alone.
+      cppLinkStdLib: targetOS == OS.android ? 'c++_static' : null,
+      libraries: [
+        // RE2's DFA budgeting calls log(). Android keeps math in a separate
+        // libm and its linker will not resolve a symbol from a library that
+        // is not in DT_NEEDED. It only surfaced once the C++ standard
+        // library above was linked statically: libc++_shared.so had pulled
+        // libm in transitively, so the omission was invisible while that
+        // dependency existed, and the device failed with `cannot locate
+        // symbol "log"`. Linux is listed too, because musl and older glibc
+        // still keep libm separate; on glibc 2.34 and later it is a no-op.
+        //
+        // Not on Windows: there is no separate math library, and this list
+        // becomes `m.lib` for MSVC, which does not exist.
+        if (targetOS == OS.android || targetOS == OS.linux) 'm',
+      ],
       // Translated per compiler (-std= vs /std:); a raw flag would be
       // silently ignored by MSVC.
       std: 'c++14',

@@ -1,3 +1,23 @@
+## 1.0.2
+
+- **Fix the Android build loading nothing on a device.** The shim is C++, and
+  the toolchain links the C++ standard library dynamically there by default,
+  so it shipped with a `DT_NEEDED` on `libc++_shared.so` that nothing puts in
+  the APK. The build stayed green and the first `Re2(...)` threw
+  `dlopen failed: library "libc++_shared.so" not found`. It is linked
+  statically now.
+
+  Fixing that uncovered a second one underneath: RE2's DFA budgeting calls
+  `log`, Android keeps math in a separate libm, and its linker will not
+  resolve a symbol from a library absent from `DT_NEEDED`. While the shared
+  C++ runtime was there it pulled libm in transitively and hid the omission;
+  with static linking the device failed on `cannot locate symbol "log"`.
+  libm is now linked explicitly on Android and Linux.
+
+  Verified end to end rather than by inspection: on an arm64 Android 15 image
+  with SELinux enforcing, and on an iOS 26 simulator, a compile-and-match
+  round trip now succeeds. `DT_NEEDED` reads libm, libdl, libc.
+
 ## 1.0.1
 
 - Correct the 1,000,000-character figure in the README. It read 1.9
