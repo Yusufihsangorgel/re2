@@ -2,7 +2,7 @@ name: re2
 description: >-
   Linear-time regular expressions for Dart via Google's RE2 over FFI. Immune to
   catastrophic backtracking (ReDoS).
-version: 1.0.4
+version: 1.0.5
 repository: https://github.com/Yusufihsangorgel/re2
 issue_tracker: https://github.com/Yusufihsangorgel/re2/issues
 
@@ -14,6 +14,8 @@ topics:
   - performance
 
 screenshots:
+  - description: "Time to match (a+)+$ against a non-matching string, log scale: the dart:core line doubles every two characters and reaches 2.9 seconds at 28, while re2 stays flat near 27 microseconds."
+    path: doc/redos.png
   - description: >-
       Why re2 stays linear: a backtracking engine tries 2^(n-1) ways to split
       the input, while RE2 makes one left-to-right pass over a state machine.

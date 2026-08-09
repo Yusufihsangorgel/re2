@@ -23,6 +23,14 @@ ordinary URL pattern. `dart run example/redos.dart` reproduces the shape on
 your machine and adds a second pattern, `^(\w+\s?)*$`, the kind you would
 write to validate a name or a tag list.
 
+![Time to match (a+)+$ against a non-matching string of a's, on a log scale. The dart:core line doubles with every two characters added and reaches 2.9 seconds at 28 characters. The re2 line is flat at about 27 microseconds.](https://raw.githubusercontent.com/Yusufihsangorgel/re2/main/doc/redos.png)
+
+`tool/redos_chart.dart` draws that from a measurement it takes as it runs, so
+the numbers on it are this machine's rather than a claim. Two characters of
+input double the red line and leave the blue one where it was. The dip at the
+left of the blue line is the first `hasMatch` in the process paying for the
+native call once; every point after it is the steady cost.
+
 [dart-lang/sdk#61284]: https://github.com/dart-lang/sdk/issues/61284
 
 ## How it works: why one explodes and the other does not

@@ -1,3 +1,16 @@
+## 1.0.5
+
+- The README opens on the curve now. `tool/redos_chart.dart` times both engines
+  on `(a+)+$` as it runs and draws `doc/redos.png` from what it measured. The
+  picture carries this machine's numbers rather than a claim. On the run
+  that produced the committed file, `dart:core` went from 6 ms at 18 characters
+  to 2.9 s at 28, doubling every two characters, while re2 sat near 27
+  microseconds across the same range and finished 100,000 characters in 5.1 ms.
+- The caption names the dip at the left of the re2 line rather than smoothing
+  it away. That point is the first `hasMatch` in the process paying for the
+  native call once, and every point after it is the steady cost.
+- Documentation and tooling only. No API, behaviour or native change.
+
 ## 1.0.4
 
 Documentation only. No API, behaviour or native change.
