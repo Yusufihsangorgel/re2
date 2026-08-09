@@ -4,8 +4,8 @@
 
 A regular expression that cannot be made to hang, no matter how hostile the
 input. `re2` binds Google's [RE2](https://github.com/google/re2) engine to Dart
-over FFI. RE2 matches in time linear in the length of the input, so a pattern
-can never take exponential time the way a backtracking engine can.
+over FFI. RE2 matches in time linear in the length of the input. A pattern can
+never take exponential time the way a backtracking engine can.
 
 Here is the whole reason the package exists, in one measurement. The pattern is
 `(a+)+$`, run against a string of `n` letter-`a`s followed by one character that
@@ -35,8 +35,8 @@ of `a`s, it has to decide how to divide those `a`s among the groups: one group
 of five, or four-then-one, or two-then-three, and so on. When the character
 after the run fails to match, the engine does not give up. It backtracks and
 tries the next division, and the next. There are `2^(n-1)` ways to split `n`
-`a`s, so at 28 characters it works through 134 million of them before it can be
-sure. Every extra character doubles that.
+`a`s: at 28 characters that is 134 million divisions to grind through before it
+can be sure. Every extra character doubles that.
 
 RE2 does not search. It compiles the pattern once into a state machine and then
 reads the input one character at a time, keeping track of every state the
@@ -54,15 +54,59 @@ lookaround, which is the subject of the next section.
 
 Read this before reaching for it.
 
-- The point is a time bound on untrusted input, not raw speed. On ordinary
-  patterns and input, `dart:core`'s `RegExp` is usually faster: crossing the
-  FFI boundary and marshalling the string costs a bit under 2x here. Use `re2`
-  where the pattern or the input is not under your control, and keep `RegExp`
+- The point is a time bound on untrusted input, not raw speed. Use `re2` where
+  the pattern or the input is not under your control, and keep `RegExp`
   everywhere else.
 - RE2 does not support backreferences (`\1`) or lookaround (`(?=...)`,
   `(?<=...)`). Those are the features that make backtracking exponential in the
   first place, so RE2 leaves them out by design. A pattern that uses them throws
   `FormatException` at construction, not at match time.
+
+### What crossing the FFI boundary costs
+
+Every `re2` call encodes the input to UTF-8, copies it into native memory, and
+calls across the boundary. That is a fixed charge plus a copy, and none of it
+depends on the pattern. `RegExp` pays nothing at the boundary, but its matching
+cost swings hard from one pattern to the next. Under `dart run` on a 64 KB
+input, `re2` took 193 microseconds for each of the three patterns below, while
+`RegExp` ranged from 7 to 275. A single "N times slower" figure would mostly be
+describing `RegExp`.
+
+The three patterns are `(\w+)@(\w+)\.(\w+)`, an ISO date
+`[0-9]{4}-[0-9]{2}-[0-9]{2}`, and a literal alternation
+`\b(ERROR|FATAL|PANIC)\b`, each run over text it never matches. The call being
+timed is `hasMatch`, so the only thing crossing back is a bool. `firstMatch`
+and `allMatches` marshal group offsets in the other direction as well, and on
+input that does match the ratio can run higher than anything below. The inputs
+are ASCII, where a character is a single byte; non-ASCII text copies more bytes
+for the same number of characters.
+
+Cells are `re2` divided by `RegExp`. Below 1.00 means `re2` is ahead.
+
+| Input | email | ISO date | alternation |
+| ----- | ----- | -------- | ----------- |
+| 16 B  | 2.17x | 4.95x    | 22.52x      |
+| 256 B | 0.84x | 0.94x    | 28.30x      |
+| 4 KB  | 0.77x | 0.84x    | 28.96x      |
+| 64 KB | 0.70x | 0.78x    | 27.78x      |
+
+Two things to read off it. The per-call charge is most of the cost on a short
+input and is gone by a few hundred bytes. And the last column is the case to
+avoid: a literal alternation is exactly what a backtracking engine is good at,
+because it can skip through the input hunting for a first byte, and `re2` stays
+at least 22x behind it at every size in the table, with no sign of narrowing as
+the input grows.
+
+A compiled build moves the whole grid in `re2`'s favour. Under `dart build cli`
+the 64 KB row reads 0.20x, 0.35x and 15.53x: `RegExp` slowed by 2.7x to 5.3x
+depending on the pattern, while `re2` slowed by about 1.5x on all three. A
+Flutter release build is a compiled build, which makes that the relevant row if
+you ship one.
+
+Both grids come from the same file, and each prints all seven sizes for your
+machine. `dart run bench/ffi_overhead.dart` prints the first. The compiled grid
+comes from `dart build cli -t bench/ffi_overhead.dart`, a preview command,
+which writes a bundle to `build/cli/<os>_<arch>/bundle/bin/ffi_overhead`.
 
 ## Usage
 
@@ -108,12 +152,14 @@ swap.dispose();
 
 ## Drop-in for the String API
 
-`Re2` implements `Pattern` and its matches implement `Match`, so it works
-anywhere a `RegExp` would: pass it straight to `String.split`,
-`String.replaceAll`, `String.replaceAllMapped`, `String.contains`,
-`String.startsWith`, `String.splitMapJoin`, and the rest. Swapping `RegExp` for
-`Re2` makes those calls run in RE2's guaranteed linear time, with no other
-change to the code.
+`Re2` implements `Pattern` and its matches implement `Match`. It works anywhere
+a `RegExp` would: pass it straight to `String.split`, `String.replaceAll`,
+`String.replaceAllMapped`, `String.contains`, `String.startsWith`,
+`String.splitMapJoin`, and the rest. Swapping `RegExp` for `Re2` makes those
+calls run in RE2's guaranteed linear time with no other change to the code,
+provided the pattern is one RE2 accepts. The two engines disagree in both
+directions about what that means; the table under [Supported
+syntax](#supported-syntax) has the list.
 
 ```dart
 final re = Re2(r'\s*,\s*');
@@ -123,14 +169,14 @@ final digits = Re2(r'\d+');
 print('order 12, 340 units'.replaceAll(digits, '#')); // order #, # units
 print('123abc'.startsWith(digits));                    // true
 
-// Match objects work in the mapped callbacks, so captures are available.
+// The mapped callbacks get a real Match, captures included.
 final pair = Re2(r'(\w)(\d)');
 print('a1 b2'.replaceAllMapped(pair, (m) => '${m[2]}${m[1]}')); // 1a 2b
 ```
 
 Match offsets are UTF-16 code-unit indices, the convention `RegExpMatch` uses,
 and they stay correct across astral (non-BMP) characters, which count as two
-units, so `input.substring(match.start, match.end)` is always the matched text.
+units. `input.substring(match.start, match.end)` is always the matched text.
 On ASCII and BMP input the results agree with `dart:core`'s `RegExp` for the
 syntax both engines share. One difference is worth knowing: RE2 matches whole
 Unicode code points, so on non-BMP input a single-character construct like `.`
@@ -162,7 +208,7 @@ try {
 
 The returned indices are positions in the list you compiled. This is the one
 thing a backtracking engine cannot follow: with `RegExp` you would run N
-separate matches, each able to blow up, so the ReDoS exposure multiplies by the
+separate matches, each able to blow up, and the ReDoS exposure multiplies by the
 rule count. `Re2Set` stays linear in the input length and independent of how
 many patterns there are. `example/ruleset.dart` runs a small WAF-style set.
 
@@ -180,7 +226,7 @@ final re = Re2('name:\\s*${Re2.escape(userInput)}');
 // escape('a.b*') matches the four characters a.b*, not "a, any char, b, zero+"
 ```
 
-Without this the only escape helper is `dart:core`'s `RegExp.escape`, so an
+Without this the only escape helper is `dart:core`'s `RegExp.escape`, and an
 untrusted fragment would drag you back to the backtracking engine for the whole
 pattern. `Re2.escape` keeps the linear-time guarantee over the composed pattern.
 
@@ -198,20 +244,31 @@ Re2(r'(?:a{1000}){1000}', maxBytes: 1024);
 RE2 syntax is close to PCRE for the features it keeps. Full reference:
 [RE2 syntax](https://github.com/google/re2/wiki/Syntax).
 
-| Feature | Supported |
-|---|---|
-| Character classes, quantifiers, anchors, alternation | Yes |
-| Capturing and named groups `(?P<name>...)` | Yes |
-| Non-capturing `(?:...)`, flags `(?i)` | Yes |
-| Unicode classes `\p{L}`, UTF-8 | Yes |
-| Backreferences `\1` | No (throws at construction) |
-| Lookahead / lookbehind | No (throws at construction) |
+The differences run in both directions, which matters when you swap one engine
+for the other. Every row below was checked by constructing the pattern on both
+engines and, where both accepted it, running it.
+
+| Feature | `dart:core` `RegExp` | `re2` |
+|---|---|---|
+| Character classes, quantifiers, anchors, alternation | Yes | Yes |
+| Capturing groups, non-capturing `(?:...)` | Yes | Yes |
+| Named groups, Python spelling `(?P<name>...)` | No (throws at construction) | Yes |
+| Named groups, Perl spelling `(?<name>...)` | Yes | No (throws at construction) |
+| Inline flags `(?i)`, `(?s)`, `(?m)`, `(?i:...)` | No (throws at construction) | Yes |
+| Unicode classes `\p{L}`, UTF-8 | Only with `unicode: true` | Yes |
+| Backreferences `\1` | Yes | No (throws at construction) |
+| Lookahead / lookbehind | Yes | No (throws at construction) |
+
+The `\p{L}` row is the one that bites quietly. A default `RegExp(r'\p{L}+')`
+constructs without complaint and then matches the literal text `p{L}`, where
+`re2` matches letters. Every other difference in the table fails loudly, at
+construction.
 
 ## Platforms
 
 The native library is compiled at build time through Dart build hooks
-(Dart 3.10+), so there is nothing to install beyond a C++ toolchain
-(Xcode CLT, gcc/clang, or MSVC).
+(Dart 3.10+). Nothing to install beyond a C++ toolchain (Xcode CLT, gcc/clang,
+or MSVC).
 
 Build hooks are stable in Flutter now, so `re2` works in a Flutter app, not
 only in a plain Dart one. Verified end to end: it resolves, compiles, and runs a
@@ -223,7 +280,7 @@ that links the native library.
 | Dart VM / server (macOS/Linux/Win)  | yes       |
 | Flutter desktop (macOS/Linux/Win)   | yes       |
 | Flutter mobile (Android/iOS)        | not tested yet |
-| Web                                 | no, FFI has no JS engine, so the linear-time guarantee cannot be offered there; use it on the server |
+| Web                                 | no. FFI has no JS engine, and the linear-time guarantee cannot be offered there; use it on the server |
 
 The one place to be careful is web: there is no native RE2 in a browser, and
 falling back to `dart:core` would silently reintroduce the ReDoS exposure `re2`

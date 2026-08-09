@@ -7,6 +7,10 @@
 //     package exists.
 //  2. Benign overhead. On ordinary input dart:core's JIT engine is already
 //     fast, and the FFI string marshalling makes RE2 somewhat slower per call.
+//     The inputs below are around 20 characters, which is the length where
+//     that per-call charge is at its worst. It amortizes away on longer input,
+//     and on some patterns it reverses: bench/ffi_overhead.dart measures the
+//     same comparison across seven input sizes and three patterns.
 //
 // Numbers are machine- and version-specific; run it yourself. Measured on an
 // Apple M-series laptop with the Dart 3.11 stable SDK.
