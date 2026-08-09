@@ -10,24 +10,6 @@ never take exponential time the way a backtracking engine can.
 stays in the tens of microseconds, then a 100001-character input that
 `dart:core` never finishes](https://raw.githubusercontent.com/Yusufihsangorgel/re2/main/doc/demo.gif)
 
-Here is the whole reason the package exists, in one measurement. The pattern is
-`(a+)+$`, run against a string of `n` letter-`a`s followed by one character that
-does not match. Both engines get the identical pattern and input.
-
-At 28 characters, `dart:core`'s `RegExp` takes about 3 seconds. `re2` takes a
-few hundred microseconds on the first call in a process and about 0.17
-microseconds per call in steady state; that gap is one-time warm-up and has
-nothing to do with the input. Add one more character and the backtracking engine
-doubles again; `re2` does not move. It matches 1,000,000 `a`s in about 6
-milliseconds. `dart run bench/bench.dart` prints all four numbers, and they
-shift a little from run to run. This is the ReDoS class of bug, and it has
-frozen real Dart apps: [dart-lang/sdk#61284] hung an app on iOS with an
-ordinary URL pattern. `dart run example/redos.dart` reproduces the shape on
-your machine and adds a second pattern, `^(\w+\s?)*$`, the kind you would
-write to validate a name or a tag list.
-
-![Time to match (a+)+$ against a non-matching string of a's, on a log scale. The dart:core line doubles with every two characters added and reaches 2.9 seconds at 28 characters. The re2 line is flat at about 27 microseconds.](https://raw.githubusercontent.com/Yusufihsangorgel/re2/main/doc/redos.png)
-
 ## Why this instead of what you already have
 
 **Instead of `dart:core`'s `RegExp`.** It backtracks. Matching `(a+)+$`
@@ -63,6 +45,24 @@ left of the blue line is the first `hasMatch` in the process paying for the
 native call once; every point after it is the steady cost.
 
 [dart-lang/sdk#61284]: https://github.com/dart-lang/sdk/issues/61284
+
+Here is the whole reason the package exists, in one measurement. The pattern is
+`(a+)+$`, run against a string of `n` letter-`a`s followed by one character that
+does not match. Both engines get the identical pattern and input.
+
+At 28 characters, `dart:core`'s `RegExp` takes about 3 seconds. `re2` takes a
+few hundred microseconds on the first call in a process and about 0.17
+microseconds per call in steady state; that gap is one-time warm-up and has
+nothing to do with the input. Add one more character and the backtracking engine
+doubles again; `re2` does not move. It matches 1,000,000 `a`s in about 6
+milliseconds. `dart run bench/bench.dart` prints all four numbers, and they
+shift a little from run to run. This is the ReDoS class of bug, and it has
+frozen real Dart apps: [dart-lang/sdk#61284] hung an app on iOS with an
+ordinary URL pattern. `dart run example/redos.dart` reproduces the shape on
+your machine and adds a second pattern, `^(\w+\s?)*$`, the kind you would
+write to validate a name or a tag list.
+
+![Time to match (a+)+$ against a non-matching string of a's, on a log scale. The dart:core line doubles with every two characters added and reaches 2.9 seconds at 28 characters. The re2 line is flat at about 27 microseconds.](https://raw.githubusercontent.com/Yusufihsangorgel/re2/main/doc/redos.png)
 
 ## How it works: why one explodes and the other does not
 
