@@ -274,16 +274,23 @@ The native library is compiled at build time through Dart build hooks
 (Dart 3.10+). Nothing to install beyond a C++ toolchain (Xcode CLT, gcc/clang,
 or MSVC).
 
-Build hooks are stable in Flutter now, so `re2` works in a Flutter app as well
+Build hooks are stable in Flutter now, and `re2` works in a Flutter app as well
 as in a plain Dart one. Verified end to end: it resolves, compiles, and runs a
 match inside a `flutter test`, and `flutter build macos` produces a working app
 that links the native library.
+
+Mobile is checked by running a match inside the app process rather than by
+building it. A Flutter app that constructs a `Re2` at startup and prints the
+result reports `hasMatch=true` on an iPhone 17 Pro simulator running iOS 26.5,
+and on an Android 15 arm64 emulator (API 35). A green build is not the same
+evidence: the Android build stayed green in 1.0.1 while the first `Re2(...)`
+threw `dlopen failed` on a device.
 
 | Target                              | Supported |
 | ----------------------------------- | --------- |
 | Dart VM / server (macOS/Linux/Win)  | yes       |
 | Flutter desktop (macOS/Linux/Win)   | yes       |
-| Flutter mobile (Android/iOS)        | not tested yet |
+| Flutter mobile (Android/iOS)        | yes       |
 | Web                                 | no. FFI has no JS engine, and the linear-time guarantee cannot be offered there; use it on the server |
 
 The one place to be careful is web: there is no native RE2 in a browser, and

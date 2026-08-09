@@ -1,3 +1,16 @@
+## 1.0.4
+
+Documentation only. No API, behaviour or native change.
+
+- The platform table said Flutter mobile was not tested yet. It is tested now,
+  and it works. A Flutter app that constructs a `Re2` at startup and prints the
+  result reports `hasMatch=true` on an iPhone 17 Pro simulator running iOS 26.5
+  and on an Android 15 arm64 emulator (API 35). The row reads yes.
+- The Platforms section says how that was checked. Running the match inside the
+  app process is the evidence that matters here, because a build can go green
+  while the library fails to load: that is what 1.0.1 shipped on Android, where
+  the first `Re2(...)` threw `dlopen failed`.
+
 ## 1.0.3
 
 Documentation only. The README quoted several measurements more precisely than
