@@ -266,7 +266,8 @@ it. A change in either engine fails that test before this table can go stale.
 | Capturing groups, non-capturing `(?:...)` | Yes | Yes |
 | Named groups, Python spelling `(?P<name>...)` | No (throws at construction) | Yes |
 | Named groups, Perl spelling `(?<name>...)` | Yes | No (throws at construction) |
-| Inline flags `(?i)`, `(?s)`, `(?m)`, `(?i:...)` | No (throws at construction) | Yes |
+| Inline flags `(?i)`, `(?s)`, `(?m)` | No (throws at construction) | Yes |
+| Modifier groups `(?i:...)` | Since Dart 3.12; throws before that | Yes |
 | Unicode classes `\p{L}`, UTF-8 | Only with `unicode: true` | Yes |
 | Backreferences `\1` | Yes | No (throws at construction) |
 | Lookahead / lookbehind | Yes | No (throws at construction) |

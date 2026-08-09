@@ -1,3 +1,5 @@
+import 'dart:io';
+
 import 'package:re2/re2.dart';
 import 'package:test/test.dart';
 
@@ -25,6 +27,7 @@ class _Case {
     this.dartCoreMatches,
     this.re2Matches,
     this.dartCoreUnicodeFlag = false,
+    this.dartCoreAcceptsFrom,
   });
 
   /// The README row this case backs.
@@ -42,6 +45,16 @@ class _Case {
   /// Set for the one row whose `dart:core` cell reads "only with
   /// `unicode: true`".
   final bool dartCoreUnicodeFlag;
+
+  /// The SDK version where `dart:core` started accepting this pattern, for the
+  /// rows where it used to reject it.
+  ///
+  /// A row that says another engine rejects something is a claim with an
+  /// expiry date: the engine can gain the feature and the row goes stale
+  /// without anyone touching this repository. That happened here. On 3.11 a
+  /// modifier group threw, and on 3.12 it does not, so the case carries the
+  /// boundary rather than one verdict.
+  final Version? dartCoreAcceptsFrom;
 }
 
 const _cases = <_Case>[
@@ -104,10 +117,12 @@ const _cases = <_Case>[
     re2Matches: true,
   ),
   _Case(
-    'Inline flags (?i:...)',
+    'Modifier group (?i:...)',
     r'(?i:abc)',
     'ABC',
     dartCore: _Support.rejects,
+    dartCoreAcceptsFrom: Version(3, 12, 0),
+    dartCoreMatches: true,
     re2: _Support.accepts,
     re2Matches: true,
   ),
@@ -158,11 +173,49 @@ const _cases = <_Case>[
   ),
 ];
 
+/// A dotted SDK version, comparable.
+class Version implements Comparable<Version> {
+  const Version(this.major, this.minor, this.patch);
+
+  factory Version.parse(String source) {
+    final parts = source.split('.');
+    return Version(
+      int.parse(parts[0]),
+      int.parse(parts[1]),
+      int.parse(parts[2].split(RegExp('[^0-9]')).first),
+    );
+  }
+
+  final int major;
+  final int minor;
+  final int patch;
+
+  @override
+  int compareTo(Version other) => major != other.major
+      ? major.compareTo(other.major)
+      : minor != other.minor
+      ? minor.compareTo(other.minor)
+      : patch.compareTo(other.patch);
+
+  bool operator <(Version other) => compareTo(other) < 0;
+
+  @override
+  String toString() => '$major.$minor.$patch';
+}
+
+/// The SDK running the suite, read from `Platform.version`.
+final Version _sdk = Version.parse(Platform.version.split(' ').first);
+
 void main() {
   group('README syntax table', () {
     for (final testCase in _cases) {
       test('${testCase.row}  /${testCase.pattern}/', () {
-        if (testCase.dartCore == _Support.rejects) {
+        final acceptsFrom = testCase.dartCoreAcceptsFrom;
+        final rejectsHere =
+            testCase.dartCore == _Support.rejects &&
+            (acceptsFrom == null || _sdk < acceptsFrom);
+
+        if (rejectsHere) {
           expect(
             () => RegExp(testCase.pattern),
             throwsFormatException,
