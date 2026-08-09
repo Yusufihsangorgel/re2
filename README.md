@@ -25,6 +25,34 @@ write to validate a name or a tag list.
 
 ![Time to match (a+)+$ against a non-matching string of a's, on a log scale. The dart:core line doubles with every two characters added and reaches 2.9 seconds at 28 characters. The re2 line is flat at about 27 microseconds.](https://raw.githubusercontent.com/Yusufihsangorgel/re2/main/doc/redos.png)
 
+## Why this instead of what you already have
+
+**Instead of `dart:core`'s `RegExp`.** It backtracks. Matching `(a+)+$`
+against a non-matching string of `a`s takes 5 ms at 18 characters, 173 ms at
+24, and 2.76 s at 28, roughly doubling with every character you add. RE2
+answers that same 28-character input in 39 µs, and a 100,000-character one in
+2.6 ms. `tool/redos_chart.dart` takes this measurement at run time and draws
+the figure above.
+
+**Instead of `oniguruma_dart`.** Its pubspec describes it as "a pure-Dart port
+of the Oniguruma regex engine (backtracking bytecode VM)," and its README
+sends you to the sibling `oniguruma_native` package when you want "robustness
+on pathological backtracking." It does expose possessive quantifiers and
+atomic groups, which the README says "never backtrack," but that protection
+only applies if whoever wrote the pattern knew to type `a++` instead of `a+`.
+RE2 drops backreferences from the grammar entirely, so the linear-time bound
+holds for every pattern it will compile, including one that arrived from a
+user.
+
+**Reach for it when**
+
+- You compile a pattern that came from a user, a config file, or a rules engine.
+- You match untrusted input on a server, where one request must not stall an isolate.
+- You run many patterns over the same text and want a single pass (`Re2Set`).
+
+**Skip it** if your patterns use backreferences or lookaround: `Re2` throws at
+construction for both, and `dart:core` is the right tool there.
+
 `tool/redos_chart.dart` draws that from a measurement it takes as it runs, so
 the numbers on it are this machine's rather than a claim. Two characters of
 input double the red line and leave the blue one where it was. The dip at the
