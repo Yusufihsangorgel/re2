@@ -1,11 +1,14 @@
 # re2
 
-![re2 banner](https://raw.githubusercontent.com/Yusufihsangorgel/re2/main/doc/banner.png)
-
 A regular expression that cannot be made to hang, no matter how hostile the
 input. `re2` binds Google's [RE2](https://github.com/google/re2) engine to Dart
 over FFI. RE2 matches in time linear in the length of the input. A pattern can
 never take exponential time the way a backtracking engine can.
+
+![The example running: matching `(a+)+$` against strings of a's, where
+`dart:core` climbs from 3 ms to over three seconds as the input grows and re2
+stays in the tens of microseconds, then a 100001-character input that
+`dart:core` never finishes](https://raw.githubusercontent.com/Yusufihsangorgel/re2/main/doc/demo.gif)
 
 Here is the whole reason the package exists, in one measurement. The pattern is
 `(a+)+$`, run against a string of `n` letter-`a`s followed by one character that
