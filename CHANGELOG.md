@@ -1,3 +1,38 @@
+## 1.0.3
+
+Documentation only. The README quoted several measurements more precisely than
+anything in the repository could reproduce, and one claim had no committed
+artifact behind it at all.
+
+- Quote the FFI overhead as a measured band rather than one figure. The README
+  read "193 microseconds for each of the three patterns". Three runs of
+  `bench/ffi_overhead.dart` on the 64 KB row produced 186 to 191, and no run
+  produced 193 on all three at once. It now reads about 190 and gives the
+  spread. The `RegExp` range in the same sentence read 7 to 275; measured, it
+  is under 7 to about 270.
+- Say that the ratio table is a single run. Its cells move by a few percent
+  between runs. Across three runs the smallest literal-alternation cell at the
+  four sizes the table shows is 20.17x, at 16 B, where both engines print near
+  the resolution of the figure. The sentence reading off that column now says
+  over 20x where it used to say at least 22x.
+- Correct the compiled-build row and drop an unmeasured claim about Flutter.
+  The 64 KB row quoted from `dart build cli` is one printed row rather than three
+  figures gathered from different runs: 0.20x, 0.35x and 15.70x. `RegExp` slows
+  by 2.6x to 5.3x against re2's 1.5x to 1.8x. The
+  README also said a Flutter release build made that row the relevant one for
+  anyone shipping a Flutter app. It is a different toolchain and nothing here
+  has measured it. The README now says to run the benchmark in the mode you
+  ship.
+- Add `test/syntax_table_test.dart`. The "Supported syntax" table said every
+  row had been checked by constructing the pattern on both engines, and no
+  committed code did that, which left the table free to go stale if either
+  engine changed. Fourteen cases now do it: each pattern is constructed on
+  `dart:core` and on `re2`, run wherever both accept it, and the one difference
+  that does not throw is covered as well, a default `RegExp(r'\p{L}+')`
+  matching the literal text `p{L}` where `re2` matches letters.
+
+No API or behaviour change.
+
 ## 1.0.2
 
 - **Fix the Android build loading nothing on a device.** The shim is C++, and
@@ -27,8 +62,8 @@
   benchmark now runs the 1,000,000-character case as its last ReDoS row, and
   the README quotes what it prints, about 6 milliseconds. No API or behaviour
   change. (That row is a single shot and lands between 5.2 and 6.5
-  milliseconds across runs here, so it is quoted to the nearest millisecond
-  rather than the 5.9 this entry first claimed.)
+  milliseconds across runs here, which is why it is quoted to the nearest
+  millisecond rather than the 5.9 this entry first claimed.)
 - Correct the `re2` figure for the 28-character case in the README. It read 2
   microseconds, and nothing measurable produced it. The row `bench/bench.dart`
   printed is the first `hasMatch` in the process, which costs a few hundred
@@ -50,7 +85,7 @@
   repository. Its flat "2 us" line matched nothing measurable, its "1.3 million
   times faster" followed from that line, and its caption still carried the 1.9
   milliseconds the first entry above retracts. A chart this repository cannot
-  regenerate is the same defect as a number it cannot, so it is gone rather
+  regenerate is the same defect as a number it cannot. It is gone rather
   than redrawn into figures that would drift again. What it showed is in
   `bench/bench.dart`, which anyone can run.
 - Quote the benign FFI overhead as a bit under 2x rather than roughly 2x. It
@@ -73,8 +108,8 @@ breaking change will not land without a major-version bump.
 - Narrow `Re2Match.pattern` from `Pattern` to `Re2`. The value there is always
   the `Re2` that produced the match, so callers reach its members without a
   cast. This mirrors `RegExpMatch`, which narrows its own `pattern` to `RegExp`.
-  Narrowing a getter's return type is a breaking change, so it is done now
-  rather than after the freeze.
+  Narrowing a getter's return type is a breaking change, which is why it is
+  done now rather than after the freeze.
 - Correct an overstated parity claim in the docs. The README and the 0.3.0
   changelog entry said results "match `dart:core`'s `RegExp` exactly, including
   UTF-16 offsets outside the Basic Multilingual Plane", and the `allMatches`
@@ -139,7 +174,7 @@ breaking change will not land without a major-version bump.
 ## 0.4.0
 
 - `Re2.escape(String)` turns an arbitrary string into a pattern that matches it
-  literally, so a search term or filename can be interpolated into a larger
+  literally, letting a search term or filename be interpolated into a larger
   pattern without its metacharacters being interpreted. Until now the only
   escaper was `dart:core`'s `RegExp.escape`, which meant an untrusted fragment
   pulled the whole pattern back onto the backtracking engine, the one thing this
@@ -159,7 +194,7 @@ breaking change will not land without a major-version bump.
 
 - Correct the README's platform claim. It said "Flutter support arrives when
   build hooks land in stable Flutter", which is stale: build hooks are stable,
-  and re2 works in a Flutter app today. Verified end to end — it resolves,
+  and re2 works in a Flutter app today. Verified end to end: it resolves,
   compiles, and runs a match inside `flutter test`, and `flutter build macos`
   produces a working app that links the native library. The README now carries
   an honest support matrix, including that web is unsupported by design: a
@@ -179,15 +214,15 @@ breaking change will not land without a major-version bump.
 ## 0.3.3
 
 - Shorten the screenshot description. pub.dev accepts up to 200 characters but
-  scores only those under 160, so the previous release published cleanly and
+  scores only those under 160. The previous release published cleanly and
   quietly gave up the documentation points it was meant to earn.
 
 ## 0.3.2
 
 - Declare the diagram in `pubspec.yaml` so pub.dev renders it on the package
   page. It was already in the repository and the README, but pub.dev shows only
-  what the `screenshots:` field points at, so the page opened with prose where
-  the picture should have been.
+  what the `screenshots:` field points at, leaving the page to open with prose
+  where the picture should have been.
 
 ## 0.3.1
 

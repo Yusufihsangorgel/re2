@@ -13,8 +13,8 @@ does not match. Both engines get the identical pattern and input.
 
 At 28 characters, `dart:core`'s `RegExp` takes about 3 seconds. `re2` takes a
 few hundred microseconds on the first call in a process and about 0.17
-microseconds per call in steady state; that gap is one-time warm-up, not
-anything about the input. Add one more character and the backtracking engine
+microseconds per call in steady state; that gap is one-time warm-up and has
+nothing to do with the input. Add one more character and the backtracking engine
 doubles again; `re2` does not move. It matches 1,000,000 `a`s in about 6
 milliseconds. `dart run bench/bench.dart` prints all four numbers, and they
 shift a little from run to run. This is the ReDoS class of bug, and it has
@@ -68,9 +68,10 @@ Every `re2` call encodes the input to UTF-8, copies it into native memory, and
 calls across the boundary. That is a fixed charge plus a copy, and none of it
 depends on the pattern. `RegExp` pays nothing at the boundary, but its matching
 cost swings hard from one pattern to the next. Under `dart run` on a 64 KB
-input, `re2` took 193 microseconds for each of the three patterns below, while
-`RegExp` ranged from 7 to 275. A single "N times slower" figure would mostly be
-describing `RegExp`.
+input, `re2` took about 190 microseconds per call on every one of the three
+patterns below, three runs here spanning 186 to 191. `RegExp` over the same
+three ranged from under 7 microseconds to about 270. A single "N times
+slower" figure would mostly be describing `RegExp`.
 
 The three patterns are `(\w+)@(\w+)\.(\w+)`, an ISO date
 `[0-9]{4}-[0-9]{2}-[0-9]{2}`, and a literal alternation
@@ -81,7 +82,8 @@ input that does match the ratio can run higher than anything below. The inputs
 are ASCII, where a character is a single byte; non-ASCII text copies more bytes
 for the same number of characters.
 
-Cells are `re2` divided by `RegExp`. Below 1.00 means `re2` is ahead.
+Cells are `re2` divided by `RegExp`. Below 1.00 means `re2` is ahead. They come
+from one run on one machine and move by a few percent between runs.
 
 | Input | email | ISO date | alternation |
 | ----- | ----- | -------- | ----------- |
@@ -94,14 +96,15 @@ Two things to read off it. The per-call charge is most of the cost on a short
 input and is gone by a few hundred bytes. And the last column is the case to
 avoid: a literal alternation is exactly what a backtracking engine is good at,
 because it can skip through the input hunting for a first byte, and `re2` stays
-at least 22x behind it at every size in the table, with no sign of narrowing as
-the input grows.
+over 20x behind it at every size in the table, with no sign of narrowing as the
+input grows.
 
 A compiled build moves the whole grid in `re2`'s favour. Under `dart build cli`
-the 64 KB row reads 0.20x, 0.35x and 15.53x: `RegExp` slowed by 2.7x to 5.3x
-depending on the pattern, while `re2` slowed by about 1.5x on all three. A
-Flutter release build is a compiled build, which makes that the relevant row if
-you ship one.
+one 64 KB row reads 0.20x, 0.35x and 15.70x. Comparing the same harness built
+both ways, `RegExp` slowed by between 2.6x and 5.3x depending on the pattern,
+while `re2` slowed by between 1.5x and 1.8x on all three. A Flutter release build also
+compiles ahead of time, but it is a different toolchain and nothing in this
+repository has measured it. Run the benchmark in the mode you ship.
 
 Both grids come from the same file, and each prints all seven sizes for your
 machine. `dart run bench/ffi_overhead.dart` prints the first. The compiled grid
@@ -245,8 +248,9 @@ RE2 syntax is close to PCRE for the features it keeps. Full reference:
 [RE2 syntax](https://github.com/google/re2/wiki/Syntax).
 
 The differences run in both directions, which matters when you swap one engine
-for the other. Every row below was checked by constructing the pattern on both
-engines and, where both accepted it, running it.
+for the other. Every row below is checked by `test/syntax_table_test.dart`,
+which constructs the pattern on both engines and, where both accept it, runs
+it. A change in either engine fails that test before this table can go stale.
 
 | Feature | `dart:core` `RegExp` | `re2` |
 |---|---|---|
@@ -270,8 +274,8 @@ The native library is compiled at build time through Dart build hooks
 (Dart 3.10+). Nothing to install beyond a C++ toolchain (Xcode CLT, gcc/clang,
 or MSVC).
 
-Build hooks are stable in Flutter now, so `re2` works in a Flutter app, not
-only in a plain Dart one. Verified end to end: it resolves, compiles, and runs a
+Build hooks are stable in Flutter now, so `re2` works in a Flutter app as well
+as in a plain Dart one. Verified end to end: it resolves, compiles, and runs a
 match inside a `flutter test`, and `flutter build macos` produces a working app
 that links the native library.
 
