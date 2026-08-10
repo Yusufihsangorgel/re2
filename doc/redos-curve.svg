@@ -1,0 +1,51 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="678" height="446" viewBox="0 0 678 446">
+  <rect width="100%" height="100%" fill="#14161C"/>
+  <text x="78.0" y="30" fill="#d8dee9" font-size="15" font-family="Menlo, monospace">(a+)+$ against "aaa...b"</text>
+  <text x="78.0" y="47" fill="#8b93a3" font-size="11.5" font-family="Menlo, monospace">time to answer "no" — log scale, measured on this machine</text>
+  <text x="78.0" y="62" fill="#8b93a3" font-size="11" font-family="Menlo, monospace">the slow side is one call; the fast side is the mean of 200, because one is under the timer</text>
+  <line x1="78.0" y1="382.0" x2="638.0" y2="382.0" stroke="#262c37" stroke-width="1"/>
+  <text x="68.0" y="386.0" fill="#8b93a3" font-size="10.5" font-family="Menlo, monospace" text-anchor="end">100 ns</text>
+  <line x1="78.0" y1="344.5" x2="638.0" y2="344.5" stroke="#262c37" stroke-width="1"/>
+  <text x="68.0" y="348.5" fill="#8b93a3" font-size="10.5" font-family="Menlo, monospace" text-anchor="end">1.0 µs</text>
+  <line x1="78.0" y1="307.0" x2="638.0" y2="307.0" stroke="#262c37" stroke-width="1"/>
+  <text x="68.0" y="311.0" fill="#8b93a3" font-size="10.5" font-family="Menlo, monospace" text-anchor="end">10 µs</text>
+  <line x1="78.0" y1="269.5" x2="638.0" y2="269.5" stroke="#262c37" stroke-width="1"/>
+  <text x="68.0" y="273.5" fill="#8b93a3" font-size="10.5" font-family="Menlo, monospace" text-anchor="end">100 µs</text>
+  <line x1="78.0" y1="232.00000000000003" x2="638.0" y2="232.00000000000003" stroke="#262c37" stroke-width="1"/>
+  <text x="68.0" y="236.00000000000003" fill="#8b93a3" font-size="10.5" font-family="Menlo, monospace" text-anchor="end">1 ms</text>
+  <line x1="78.0" y1="194.5" x2="638.0" y2="194.5" stroke="#262c37" stroke-width="1"/>
+  <text x="68.0" y="198.5" fill="#8b93a3" font-size="10.5" font-family="Menlo, monospace" text-anchor="end">10 ms</text>
+  <line x1="78.0" y1="157.0" x2="638.0" y2="157.0" stroke="#262c37" stroke-width="1"/>
+  <text x="68.0" y="161.0" fill="#8b93a3" font-size="10.5" font-family="Menlo, monospace" text-anchor="end">100 ms</text>
+  <line x1="78.0" y1="119.50000000000006" x2="638.0" y2="119.50000000000006" stroke="#262c37" stroke-width="1"/>
+  <text x="68.0" y="123.50000000000006" fill="#8b93a3" font-size="10.5" font-family="Menlo, monospace" text-anchor="end">1.00 s</text>
+  <line x1="78.0" y1="82.0" x2="638.0" y2="82.0" stroke="#262c37" stroke-width="1"/>
+  <text x="68.0" y="86.0" fill="#8b93a3" font-size="10.5" font-family="Menlo, monospace" text-anchor="end">10.00 s</text>
+  <text x="78.0" y="402.0" fill="#8b93a3" font-size="10.5" font-family="Menlo, monospace" text-anchor="middle">17</text>
+  <text x="171.33333333333331" y="402.0" fill="#8b93a3" font-size="10.5" font-family="Menlo, monospace" text-anchor="middle">19</text>
+  <text x="264.66666666666663" y="402.0" fill="#8b93a3" font-size="10.5" font-family="Menlo, monospace" text-anchor="middle">21</text>
+  <text x="358.0" y="402.0" fill="#8b93a3" font-size="10.5" font-family="Menlo, monospace" text-anchor="middle">23</text>
+  <text x="451.3333333333333" y="402.0" fill="#8b93a3" font-size="10.5" font-family="Menlo, monospace" text-anchor="middle">25</text>
+  <text x="544.6666666666667" y="402.0" fill="#8b93a3" font-size="10.5" font-family="Menlo, monospace" text-anchor="middle">27</text>
+  <text x="638.0" y="402.0" fill="#8b93a3" font-size="10.5" font-family="Menlo, monospace" text-anchor="middle">29</text>
+  <text x="358.0" y="424.0" fill="#8b93a3" font-size="11" font-family="Menlo, monospace" text-anchor="middle">input length</text>
+  <path d="M 78.0,206.5 L 171.3,203.7 L 264.7,181.7 L 358.0,159.2 L 451.3,136.4 L 544.7,113.7 L 638.0,91.1" fill="none" stroke="#ff8f6b" stroke-width="2.5"/>
+  <path d="M 78.0,334.0 L 171.3,331.8 L 264.7,337.6 L 358.0,346.3 L 451.3,345.5 L 544.7,340.5 L 638.0,347.1" fill="none" stroke="#7fb3ff" stroke-width="2.5"/>
+  <circle cx="78.0" cy="206.51123571730136" r="3" fill="#ff8f6b"/>
+  <circle cx="78.0" cy="333.9612487282102" r="3" fill="#7fb3ff"/>
+  <circle cx="171.33333333333331" cy="203.74350786283864" r="3" fill="#ff8f6b"/>
+  <circle cx="171.33333333333331" cy="331.84527770160037" r="3" fill="#7fb3ff"/>
+  <circle cx="264.66666666666663" cy="181.66433221653446" r="3" fill="#ff8f6b"/>
+  <circle cx="264.66666666666663" cy="337.57407134434004" r="3" fill="#7fb3ff"/>
+  <circle cx="358.0" cy="159.21905640361612" r="3" fill="#ff8f6b"/>
+  <circle cx="358.0" cy="346.3066361756533" r="3" fill="#7fb3ff"/>
+  <circle cx="451.3333333333333" cy="136.35465084842747" r="3" fill="#ff8f6b"/>
+  <circle cx="451.3333333333333" cy="345.5077054900113" r="3" fill="#7fb3ff"/>
+  <circle cx="544.6666666666667" cy="113.66696250658572" r="3" fill="#ff8f6b"/>
+  <circle cx="544.6666666666667" cy="340.543368071126" r="3" fill="#7fb3ff"/>
+  <circle cx="638.0" cy="91.13544675727576" r="3" fill="#ff8f6b"/>
+  <circle cx="638.0" cy="347.146790285714" r="3" fill="#7fb3ff"/>
+  <text x="630.0" y="81.13544675727576" fill="#ff8f6b" font-size="12" font-family="Menlo, monospace" text-anchor="end">dart:core RegExp — 5.71 s, one call</text>
+  <text x="630.0" y="337.146790285714" fill="#7fb3ff" font-size="12" font-family="Menlo, monospace" text-anchor="end">re2 — 850 ns, mean of 200</text>
+  <text x="339.0" y="434.0" fill="#8b93a3" font-size="11" font-family="Menlo, monospace" text-anchor="middle">each two characters double the backtracking engine; the flat line is the same work in linear time</text>
+</svg>

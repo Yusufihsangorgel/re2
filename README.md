@@ -10,6 +10,22 @@ never take exponential time the way a backtracking engine can.
 stays in the tens of microseconds, then a 100001-character input that
 `dart:core` never finishes](https://raw.githubusercontent.com/Yusufihsangorgel/re2/main/doc/demo.gif)
 
+Those numbers are a table in the terminal. Here they are as the shape they
+make, which is the whole argument:
+
+![A log-scale chart. The dart:core line climbs straight across five decades,
+from about 4 ms at 17 characters to 5.7 seconds at 29. The re2 line runs flat
+along one microsecond the entire
+way.](https://raw.githubusercontent.com/Yusufihsangorgel/re2/main/doc/redos-curve.png)
+
+A straight line on a log axis is exponential growth. Each two characters double
+the backtracking engine, so the distance between the two lines is not a
+constant factor to be optimised away — it widens forever. Twenty-nine `a`s is a
+string a user can type into a form.
+
+Redraw it on your own machine with `dart run tool/redos_figure.dart`; the
+figure is plotted from that run, not typed in.
+
 ## Why this instead of what you already have
 
 **Instead of `dart:core`'s `RegExp`.** It backtracks. Matching `(a+)+$`

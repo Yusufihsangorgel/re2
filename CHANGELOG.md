@@ -1,3 +1,12 @@
+## 1.1.3
+
+- A log-scale chart of the ReDoS measurement. The terminal recording already
+  had the numbers; the chart has the shape, and the shape is the argument — a
+  straight line on a log axis is exponential growth, so the gap between the two
+  engines widens forever rather than being a constant factor. Plotted by
+  `tool/redos_figure.dart` from its own run, with each line labelled by how it
+  was timed.
+
 ## 1.1.2
 
 - The section on why to reach for this rather than the alternative now sits
