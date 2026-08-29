@@ -1,3 +1,10 @@
+## 1.1.6
+
+- `code_assets` moved to `^2.0.0`. The 1.x constraint would have cost this
+  package a pub.dev scorecard point once the grace period on the 2.0.0 release
+  expires. The native build produces the same library; the test suite runs
+  against a freshly compiled one.
+
 ## 1.1.5
 
 - `bench/compare.dart` runs both directions of the comparison in one command:

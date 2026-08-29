@@ -2,7 +2,7 @@ name: re2
 description: >-
   Linear-time regular expressions for Dart via Google's RE2 over FFI. Immune to
   catastrophic backtracking (ReDoS).
-version: 1.1.5
+version: 1.1.6
 repository: https://github.com/Yusufihsangorgel/re2
 issue_tracker: https://github.com/Yusufihsangorgel/re2/issues
 
@@ -29,7 +29,7 @@ environment:
   sdk: ^3.10.0
 
 dependencies:
-  code_assets: ^1.2.1
+  code_assets: ^2.0.0
   ffi: ^2.1.0
   hooks: '>=2.0.2 <3.0.0'
   native_toolchain_c: '>=0.19.2 <0.20.0'
