@@ -1,3 +1,11 @@
+## 1.1.4
+
+- The screenshot description for `doc/redos.png` was 184 characters.
+  pub.dev requires those under 160, and it was withholding 10 of the
+  package's 160 pub points for it. It is now 147 characters. The two
+  measurements it reports are unchanged: 2.9 seconds for `dart:core` at 28
+  characters, 27 microseconds for re2.
+
 ## 1.1.3
 
 - A log-scale chart of the ReDoS measurement. The terminal recording already
