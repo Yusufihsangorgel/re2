@@ -26,6 +26,14 @@ string a user can type into a form.
 Redraw it on your own machine with `dart run tool/redos_figure.dart`; the
 figure is plotted from that run, not typed in.
 
+`dart run bench/compare.dart` prints the same comparison as two tables. The
+first runs four catastrophic patterns, including the URL validator from
+dart-lang/sdk#61284 and the one that took Cloudflare down in July 2019, with
+`dart:core` in a worker isolate under a five-second timeout so a blowup is
+recorded rather than hanging the run. The second runs an email, an ISO date and
+a keyword alternation, which is where `RegExp` wins and where the numbers below
+come from.
+
 ## Why this instead of what you already have
 
 **Instead of `dart:core`'s `RegExp`.** It backtracks. Matching `(a+)+$`

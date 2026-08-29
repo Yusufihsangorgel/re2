@@ -1,3 +1,11 @@
+## 1.1.5
+
+- `bench/compare.dart` runs both directions of the comparison in one command:
+  four catastrophic patterns against `dart:core` in a timed-out worker isolate,
+  and three ordinary patterns where `RegExp` is the faster choice. The
+  catastrophic set now includes the URL validator from dart-lang/sdk#61284 and
+  the pattern behind Cloudflare's July 2019 outage.
+
 ## 1.1.4
 
 - The screenshot description for `doc/redos.png` was 184 characters.
