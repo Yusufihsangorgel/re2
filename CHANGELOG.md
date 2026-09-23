@@ -1,3 +1,10 @@
+## 1.1.7
+
+- The build hook returns early when a build does not request code assets.
+  It read the target OS for the RE2 build first, and that setting exists only
+  in code-asset builds; any other build failed inside the hook. A new test
+  runs the hook with no asset types requested.
+
 ## 1.1.6
 
 - `code_assets` moved to `^2.0.0`. The 1.x constraint would have cost this
