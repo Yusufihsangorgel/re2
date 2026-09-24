@@ -7,11 +7,11 @@ repository: https://github.com/Yusufihsangorgel/re2
 issue_tracker: https://github.com/Yusufihsangorgel/re2/issues
 
 topics:
-  - regex
   - re2
-  - security
-  - ffi
-  - performance
+  - regex
+  - regular-expressions
+  - redos
+  - linear-time
 
 screenshots:
   - description: "Time to match (a+)+$ against a non-matching string, log scale: dart:core reaches 2.9 seconds at 28 characters; re2 stays flat near 27 microseconds."
