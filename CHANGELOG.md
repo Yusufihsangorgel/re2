@@ -1,3 +1,12 @@
+## Unreleased
+
+- `matchAsPrefix`, and `String.startsWith` with an `Re2`, make one native
+  match call at the given start instead of collecting every match in the
+  input.
+- A failed native match throws `StateError` instead of reading as no match.
+- Compile diagnostics decode with the same WTF-8 decoder as every other text
+  path. A diagnostic cut inside a multibyte sequence keeps its RE2 message.
+
 ## 1.1.7
 
 - The build hook returns early when a build does not request code assets.

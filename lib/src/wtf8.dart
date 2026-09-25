@@ -59,19 +59,29 @@ List<int> encodeWtf8(String s) {
 /// [String], reconstructing a lone surrogate's 3-byte sequence into that
 /// surrogate code unit instead of throwing or substituting U+FFFD.
 ///
-/// Bytes with no such sequence decode exactly as `utf8.decode` would.
-String decodeWtf8(List<int> bytes) {
+/// Bytes with no such sequence decode exactly as `utf8.decode` would unless
+/// [allowMalformed] is true, in which case malformed bytes are replaced.
+String decodeWtf8(List<int> bytes, {bool allowMalformed = false}) {
   var i = 0;
   while (i < bytes.length && !_isEncodedSurrogateAt(bytes, i)) {
     i++;
   }
-  if (i == bytes.length) return utf8.decode(bytes);
+  if (i == bytes.length) {
+    return utf8.decode(bytes, allowMalformed: allowMalformed);
+  }
 
   final result = StringBuffer();
   var runStart = 0;
   while (i < bytes.length) {
     if (_isEncodedSurrogateAt(bytes, i)) {
-      if (i > runStart) result.write(utf8.decode(bytes.sublist(runStart, i)));
+      if (i > runStart) {
+        result.write(
+          utf8.decode(
+            bytes.sublist(runStart, i),
+            allowMalformed: allowMalformed,
+          ),
+        );
+      }
       final unit =
           ((bytes[i] & 0x0F) << 12) |
           ((bytes[i + 1] & 0x3F) << 6) |
@@ -84,7 +94,9 @@ String decodeWtf8(List<int> bytes) {
     }
   }
   if (runStart < bytes.length) {
-    result.write(utf8.decode(bytes.sublist(runStart)));
+    result.write(
+      utf8.decode(bytes.sublist(runStart), allowMalformed: allowMalformed),
+    );
   }
   return result.toString();
 }

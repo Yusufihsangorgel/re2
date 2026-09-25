@@ -12,6 +12,29 @@ void main() {
       expect(matches.map((m) => m.end), [2, 5, 9]);
     });
 
+    test('preserves every match in a long input', () {
+      final re = Re2(r'\d+');
+      addTearDown(re.dispose);
+      final expected = List.generate(2048, (index) => '$index');
+      final input = List.generate(2048, (index) => 'item $index').join(', ');
+      final matches = re.allMatches(input);
+
+      expect(matches.map((match) => match.group(0)).toList(), expected);
+    });
+
+    test('prefix checks stay anchored on a long input with many matches', () {
+      final re = Re2(r'item \d+');
+      addTearDown(re.dispose);
+      final input = List.generate(2048, (index) => 'item $index').join(', ');
+      final lastItemStart = input.lastIndexOf('item');
+      final separatorStart = input.indexOf(',');
+
+      expect(re.matchAsPrefix(input, lastItemStart)?.group(0), 'item 2047');
+      expect(input.startsWith(re, lastItemStart), isTrue);
+      expect(re.matchAsPrefix(input, separatorStart), isNull);
+      expect(input.startsWith(re, separatorStart), isFalse);
+    });
+
     test('returns an empty iterable when nothing matches', () {
       final re = Re2(r'\d+');
       addTearDown(re.dispose);

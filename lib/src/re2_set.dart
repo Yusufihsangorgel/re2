@@ -1,4 +1,3 @@
-import 'dart:convert';
 import 'dart:ffi';
 
 import 'bindings.dart';
@@ -60,34 +59,33 @@ final class Re2Set implements Finalizable {
     }
 
     var built = false;
+    Re2Set? set;
     try {
       const errCap = 256;
       final errPtr = allocateBytes(errCap);
       final errLenPtr = allocateInt32(1);
       try {
         for (var i = 0; i < patterns.length; i++) {
-          final bytes = encodeWtf8(patterns[i]);
-          final patternPtr = allocateBytes(bytes.length);
-          try {
-            patternPtr.asTypedList(bytes.length).setAll(0, bytes);
+          withNativeText(patterns[i], (patternPtr, patternLength) {
             final index = re2SetAdd(
               handle,
               patternPtr,
-              bytes.length,
+              patternLength,
               errPtr,
               errCap,
               errLenPtr,
             );
             if (index < 0) {
-              final message = utf8.decode(errPtr.asTypedList(errLenPtr.value));
+              final message = decodeWtf8(
+                errPtr.asTypedList(errLenPtr.value),
+                allowMalformed: true,
+              );
               throw FormatException(
                 'Invalid RE2 pattern at index $i: $message',
                 patterns[i],
               );
             }
-          } finally {
-            freeBytes(patternPtr);
-          }
+          });
         }
       } finally {
         freeBytes(errPtr);
@@ -100,14 +98,18 @@ final class Re2Set implements Finalizable {
           'memory budget)',
         );
       }
+      final compiledSet = Re2Set._(handle, patterns.length);
+      set = compiledSet;
+      _finalizer.attach(compiledSet, handle, detach: compiledSet);
       built = true;
-      final set = Re2Set._(handle, patterns.length);
-      _finalizer.attach(set, handle, detach: set);
-      return set;
+      return compiledSet;
     } finally {
       // If we threw before attaching the finalizer, release the handle here so
       // a rejected set does not leak.
-      if (!built) re2SetFree(handle);
+      if (!built) {
+        if (set != null) _finalizer.detach(set);
+        re2SetFree(handle);
+      }
     }
   }
 
@@ -128,16 +130,12 @@ final class Re2Set implements Finalizable {
   /// Throws [StateError] if this set has been disposed.
   Set<int> matches(String input) {
     _checkNotDisposed();
-    final bytes = encodeWtf8(input);
-    final textPtr = allocateBytes(bytes.length);
-    try {
-      textPtr.asTypedList(bytes.length).setAll(0, bytes);
-      // First call learns the count; the buffer is sized to patternCount, which
-      // is the most indices any match can return, so one retry is never needed.
+    return withNativeText(input, (textPtr, textLength) {
+      // The buffer holds every possible matching index. No retry is needed.
       final cap = patternCount < 1 ? 1 : patternCount;
       final outPtr = allocateInt32(cap);
       try {
-        final total = re2SetMatch(_handle, textPtr, bytes.length, outPtr, cap);
+        final total = re2SetMatch(_handle, textPtr, textLength, outPtr, cap);
         if (total < 0) {
           throw StateError('RE2 set match failed');
         }
@@ -147,9 +145,7 @@ final class Re2Set implements Finalizable {
       } finally {
         freeInt32(outPtr);
       }
-    } finally {
-      freeBytes(textPtr);
-    }
+    });
   }
 
   /// Whether any pattern in the set matches [input]. Cheaper to read than

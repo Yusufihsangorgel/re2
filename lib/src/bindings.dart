@@ -2,6 +2,8 @@ import 'dart:ffi';
 
 import 'package:ffi/ffi.dart';
 
+import 'wtf8.dart';
+
 // Bindings to the C ABI shim over the vendored RE2 engine. The native
 // library is produced by hook/build.dart, which registers it under the asset
 // id of this library (src/bindings.dart), so every @Native symbol below
@@ -154,6 +156,22 @@ Pointer<Uint8> allocateBytes(int bytes) =>
 
 /// Frees memory from [allocateBytes].
 void freeBytes(Pointer<Uint8> pointer) => malloc.free(pointer);
+
+/// Encodes [text] as WTF-8, passes its native buffer and byte length to
+/// [action], then frees the buffer when [action] returns or throws.
+T withNativeText<T>(
+  String text,
+  T Function(Pointer<Uint8> pointer, int length) action,
+) {
+  final bytes = encodeWtf8(text);
+  final pointer = allocateBytes(bytes.length);
+  try {
+    pointer.asTypedList(bytes.length).setAll(0, bytes);
+    return action(pointer, bytes.length);
+  } finally {
+    freeBytes(pointer);
+  }
+}
 
 /// Allocates [count] native `int32` slots.
 Pointer<Int32> allocateInt32(int count) =>

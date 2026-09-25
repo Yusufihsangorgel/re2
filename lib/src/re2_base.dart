@@ -1,4 +1,3 @@
-import 'dart:convert';
 import 'dart:ffi';
 
 import 'bindings.dart';
@@ -61,38 +60,41 @@ final class Re2 implements Finalizable, Pattern {
     if (maxBytes != null && maxBytes <= 0) {
       throw ArgumentError.value(maxBytes, 'maxBytes', 'must be positive');
     }
-    final patternBytes = encodeWtf8(pattern);
-    final patternPtr = allocateBytes(patternBytes.length);
-    try {
-      patternPtr.asTypedList(patternBytes.length).setAll(0, patternBytes);
+    withNativeText(pattern, (patternPtr, patternLength) {
       _handle = re2Compile(
         patternPtr,
-        patternBytes.length,
+        patternLength,
         caseSensitive ? 1 : 0,
         multiLine ? 1 : 0,
         dotAll ? 1 : 0,
         maxBytes ?? 0,
       );
-    } finally {
-      freeBytes(patternPtr);
-    }
+    });
 
     if (_handle == nullptr) {
       throw StateError('RE2 could not allocate native memory for the pattern');
     }
-    if (re2Ok(_handle) == 0) {
-      final errorLength = re2ErrorLength(_handle);
-      final message = utf8.decode(
-        re2Error(_handle).cast<Uint8>().asTypedList(errorLength),
-      );
-      re2Free(_handle);
-      _handle = nullptr;
-      throw FormatException('Invalid RE2 pattern: $message', pattern);
-    }
+    var finalizerAttached = false;
+    try {
+      if (re2Ok(_handle) == 0) {
+        final errorLength = re2ErrorLength(_handle);
+        final message = decodeWtf8(
+          re2Error(_handle).cast<Uint8>().asTypedList(errorLength),
+        );
+        throw FormatException('Invalid RE2 pattern: $message', pattern);
+      }
 
-    _groupCount = re2NumGroups(_handle);
-    _namedGroups = _readNamedGroups(_handle);
-    _finalizer.attach(this, _handle, detach: this);
+      _groupCount = re2NumGroups(_handle);
+      _namedGroups = _readNamedGroups(_handle);
+      _finalizer.attach(this, _handle, detach: this);
+      finalizerAttached = true;
+    } finally {
+      if (!finalizerAttached) {
+        _finalizer.detach(this);
+        re2Free(_handle);
+        _handle = nullptr;
+      }
+    }
   }
 
   /// The source text of the pattern.
@@ -125,27 +127,22 @@ final class Re2 implements Finalizable, Pattern {
   /// nothing else: `escape('a.b*')` is a pattern for the four-character string
   /// `a.b*`, not "a, any char, b, zero or more".
   static String escape(String literal) {
-    final bytes = encodeWtf8(literal);
-    final textPtr = allocateBytes(bytes.length);
-    try {
-      textPtr.asTypedList(bytes.length).setAll(0, bytes);
+    return withNativeText(literal, (textPtr, textLength) {
       // First call measures: pass a null buffer to learn the escaped length,
       // then a buffer of exactly that size plus the NUL terminator.
-      final needed = re2QuoteMeta(textPtr, bytes.length, nullptr, 0);
+      final needed = re2QuoteMeta(textPtr, textLength, nullptr, 0);
       if (needed < 0) {
         throw StateError('RE2 could not escape the string');
       }
       if (needed == 0) return '';
       final outPtr = allocateBytes(needed + 1);
       try {
-        re2QuoteMeta(textPtr, bytes.length, outPtr, needed + 1);
+        re2QuoteMeta(textPtr, textLength, outPtr, needed + 1);
         return decodeWtf8(outPtr.asTypedList(needed));
       } finally {
         freeBytes(outPtr);
       }
-    } finally {
-      freeBytes(textPtr);
-    }
+    });
   }
 
   late Pointer<Void> _handle;
@@ -164,14 +161,10 @@ final class Re2 implements Finalizable, Pattern {
   /// Throws [StateError] if this instance has been disposed.
   bool hasMatch(String input) {
     _checkNotDisposed();
-    final bytes = encodeWtf8(input);
-    final ptr = allocateBytes(bytes.length);
-    try {
-      ptr.asTypedList(bytes.length).setAll(0, bytes);
-      return re2PartialMatch(_handle, ptr, bytes.length) == 1;
-    } finally {
-      freeBytes(ptr);
-    }
+    return withNativeText(
+      input,
+      (ptr, length) => re2PartialMatch(_handle, ptr, length) == 1,
+    );
   }
 
   /// The first match of the pattern in [input], or `null` if there is none.
@@ -179,29 +172,14 @@ final class Re2 implements Finalizable, Pattern {
   /// Throws [StateError] if this instance has been disposed.
   Re2Match? firstMatch(String input) {
     _checkNotDisposed();
-    final bytes = encodeWtf8(input);
-    final textLength = bytes.length;
-    final slots = _groupCount + 1;
-    final ptr = allocateBytes(textLength);
-    final starts = allocateInt32(slots);
-    final ends = allocateInt32(slots);
-    try {
-      ptr.asTypedList(textLength).setAll(0, bytes);
-      final result = re2Match(_handle, ptr, textLength, 0, starts, ends, slots);
-      if (result <= 0) return null;
-      return _buildMatch(
-        input,
-        bytes,
-        starts,
-        ends,
-        slots,
-        _Utf16Cursor(bytes),
+    return withNativeText(input, (ptr, length) {
+      final bytes = ptr.asTypedList(length);
+      final cursor = _Utf16Cursor(bytes);
+      return _withMatchSlots(
+        (starts, ends, slots) =>
+            _matchAt(input, bytes, ptr, length, 0, starts, ends, slots, cursor),
       );
-    } finally {
-      freeBytes(ptr);
-      freeInt32(starts);
-      freeInt32(ends);
-    }
+    });
   }
 
   /// The matched substring of the first match in [input], or `null`.
@@ -235,39 +213,38 @@ final class Re2 implements Finalizable, Pattern {
 
   String _replace(String input, String rewrite, {required bool global}) {
     _checkNotDisposed();
-    final textBytes = encodeWtf8(input);
-    final rewriteBytes = encodeWtf8(rewrite);
-    final textPtr = allocateBytes(textBytes.length);
-    final rewritePtr = allocateBytes(rewriteBytes.length);
-    final outLength = allocateInt32(1);
-    final outCount = allocateInt32(1);
-    try {
-      textPtr.asTypedList(textBytes.length).setAll(0, textBytes);
-      rewritePtr.asTypedList(rewriteBytes.length).setAll(0, rewriteBytes);
-      final resultPtr = re2Replace(
-        _handle,
-        textPtr,
-        textBytes.length,
-        rewritePtr,
-        rewriteBytes.length,
-        global ? 1 : 0,
-        outLength,
-        outCount,
-      );
-      if (resultPtr == nullptr) {
-        throw StateError('RE2 replace failed');
-      }
-      try {
-        return decodeWtf8(resultPtr.asTypedList(outLength.value));
-      } finally {
-        re2FreeString(resultPtr);
-      }
-    } finally {
-      freeBytes(textPtr);
-      freeBytes(rewritePtr);
-      freeInt32(outLength);
-      freeInt32(outCount);
-    }
+    return withNativeText(input, (textPtr, textLength) {
+      return withNativeText(rewrite, (rewritePtr, rewriteLength) {
+        final outLength = allocateInt32(1);
+        try {
+          final outCount = allocateInt32(1);
+          try {
+            final resultPtr = re2Replace(
+              _handle,
+              textPtr,
+              textLength,
+              rewritePtr,
+              rewriteLength,
+              global ? 1 : 0,
+              outLength,
+              outCount,
+            );
+            if (resultPtr == nullptr) {
+              throw StateError('RE2 replace failed');
+            }
+            try {
+              return decodeWtf8(resultPtr.asTypedList(outLength.value));
+            } finally {
+              re2FreeString(resultPtr);
+            }
+          } finally {
+            freeInt32(outCount);
+          }
+        } finally {
+          freeInt32(outLength);
+        }
+      });
+    });
   }
 
   /// Every non-overlapping match of the pattern in [input], starting the
@@ -290,43 +267,37 @@ final class Re2 implements Finalizable, Pattern {
     _checkNotDisposed();
     RangeError.checkValueInInterval(start, 0, input.length, 'start');
 
-    final bytes = encodeWtf8(input);
-    final textLength = bytes.length;
-    final slots = _groupCount + 1;
-    final ptr = allocateBytes(textLength);
-    final starts = allocateInt32(slots);
-    final ends = allocateInt32(slots);
-    final matches = <Re2Match>[];
-    // A single forward cursor maps byte offsets to UTF-16 indices across the
-    // whole scan, which is valid because matches are found left to right.
-    final cursor = _Utf16Cursor(bytes);
-    try {
-      ptr.asTypedList(textLength).setAll(0, bytes);
-      var position = _utf16IndexToByteOffset(bytes, start);
-      while (position <= textLength) {
-        final result = re2Match(
-          _handle,
-          ptr,
-          textLength,
-          position,
-          starts,
-          ends,
-          slots,
-        );
-        if (result <= 0) break;
-        final matchStart = starts[0];
-        final matchEnd = ends[0];
-        matches.add(_buildMatch(input, bytes, starts, ends, slots, cursor));
-        position = matchEnd == matchStart
-            ? matchEnd + _codePointLength(bytes, matchEnd)
-            : matchEnd;
-      }
-    } finally {
-      freeBytes(ptr);
-      freeInt32(starts);
-      freeInt32(ends);
-    }
-    return matches;
+    return withNativeText(input, (ptr, textLength) {
+      final bytes = ptr.asTypedList(textLength);
+      // A single forward cursor maps byte offsets to UTF-16 indices across the
+      // whole scan, which is valid because matches are found left to right.
+      final cursor = _Utf16Cursor(bytes);
+      return _withMatchSlots((starts, ends, slots) {
+        final matches = <Re2Match>[];
+        var position = _utf16IndexToByteOffset(bytes, start);
+        while (position <= textLength) {
+          final match = _matchAt(
+            input,
+            bytes,
+            ptr,
+            textLength,
+            position,
+            starts,
+            ends,
+            slots,
+            cursor,
+          );
+          if (match == null) break;
+          final matchStart = starts[0];
+          final matchEnd = ends[0];
+          matches.add(match);
+          position = matchEnd == matchStart
+              ? matchEnd + _codePointLength(bytes, matchEnd)
+              : matchEnd;
+        }
+        return matches;
+      });
+    });
   }
 
   /// The match beginning exactly at [start] in [input], or `null` if the
@@ -347,18 +318,30 @@ final class Re2 implements Finalizable, Pattern {
   Re2Match? matchAsPrefix(String input, [int start = 0]) {
     _checkNotDisposed();
     RangeError.checkValueInInterval(start, 0, input.length, 'start');
-    // RE2's leftmost search from `start` returns the earliest match at or after
-    // it; a prefix match is exactly that match when it begins at `start`. If the
-    // earliest match begins later, nothing matches at `start`.
-    for (final match in allMatches(input, start)) {
-      return match.start == start ? match : null;
-    }
-    return null;
+    return withNativeText(input, (ptr, textLength) {
+      final bytes = ptr.asTypedList(textLength);
+      final cursor = _Utf16Cursor(bytes);
+      return _withMatchSlots((starts, ends, slots) {
+        final position = _utf16IndexToByteOffset(bytes, start);
+        final match = _matchAt(
+          input,
+          bytes,
+          ptr,
+          textLength,
+          position,
+          starts,
+          ends,
+          slots,
+          cursor,
+        );
+        return match?.start == start ? match : null;
+      });
+    });
   }
 
   /// Releases the native handle. Safe to call more than once. After disposal,
-  /// [hasMatch], [firstMatch], [stringMatch] and [allMatches] throw
-  /// [StateError].
+  /// [hasMatch], [firstMatch], [stringMatch], [replaceFirst], [replaceAll],
+  /// [allMatches] and [matchAsPrefix] throw [StateError].
   void dispose() {
     if (_disposed) return;
     _disposed = true;
@@ -369,6 +352,47 @@ final class Re2 implements Finalizable, Pattern {
 
   @override
   String toString() => 'Re2(/$pattern/)';
+
+  Re2Match? _matchAt(
+    String input,
+    List<int> bytes,
+    Pointer<Uint8> text,
+    int textLength,
+    int position,
+    Pointer<Int32> starts,
+    Pointer<Int32> ends,
+    int slots,
+    _Utf16Cursor cursor,
+  ) {
+    final result = re2Match(
+      _handle,
+      text,
+      textLength,
+      position,
+      starts,
+      ends,
+      slots,
+    );
+    if (!checkRe2MatchResult(result)) return null;
+    return _buildMatch(input, bytes, starts, ends, slots, cursor);
+  }
+
+  T _withMatchSlots<T>(
+    T Function(Pointer<Int32> starts, Pointer<Int32> ends, int slots) action,
+  ) {
+    final slots = _groupCount + 1;
+    final starts = allocateInt32(slots);
+    try {
+      final ends = allocateInt32(slots);
+      try {
+        return action(starts, ends, slots);
+      } finally {
+        freeInt32(ends);
+      }
+    } finally {
+      freeInt32(starts);
+    }
+  }
 
   Re2Match _buildMatch(
     String input,
@@ -425,7 +449,7 @@ final class Re2 implements Finalizable, Pattern {
           length = re2NamedGroupAt(handle, i, nameBuffer, capacity, indexOut);
           if (length < 0) continue;
         }
-        result[utf8.decode(nameBuffer.asTypedList(length))] = indexOut.value;
+        result[decodeWtf8(nameBuffer.asTypedList(length))] = indexOut.value;
       }
     } finally {
       freeBytes(nameBuffer);
@@ -456,7 +480,7 @@ class _Utf16Cursor {
       final length = _codePointLength(_bytes, _bytePosition);
       _bytePosition += length;
       // A code point above U+FFFF is four UTF-8 bytes and two UTF-16 units.
-      _utf16Position += length == 4 ? 2 : 1;
+      _utf16Position += _utf16Width(length);
     }
     return _utf16Position;
   }
@@ -473,6 +497,16 @@ int _codePointLength(List<int> bytes, int offset) {
   return 4;
 }
 
+int _utf16Width(int utf8Length) => utf8Length == 4 ? 2 : 1;
+
+/// Converts a native match result to whether a match was found.
+///
+/// Throws [StateError] when the native match operation failed.
+bool checkRe2MatchResult(int result) {
+  if (result < 0) throw StateError('RE2 match failed');
+  return result != 0;
+}
+
 /// Translates a UTF-16 code unit index into a UTF-8 byte offset.
 int _utf16IndexToByteOffset(List<int> bytes, int utf16Index) {
   var bytePosition = 0;
@@ -480,7 +514,7 @@ int _utf16IndexToByteOffset(List<int> bytes, int utf16Index) {
   while (utf16Position < utf16Index && bytePosition < bytes.length) {
     final length = _codePointLength(bytes, bytePosition);
     bytePosition += length;
-    utf16Position += length == 4 ? 2 : 1;
+    utf16Position += _utf16Width(length);
   }
   return bytePosition;
 }

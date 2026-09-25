@@ -88,6 +88,40 @@ void main() {
       );
     });
 
+    test('a diagnostic containing a lone surrogate is decoded as WTF-8', () {
+      final loneSurrogate = String.fromCharCode(0xD800);
+      final pattern = ')$loneSurrogate';
+      expect(
+        () => Re2Set.compile([pattern]),
+        throwsA(
+          isA<FormatException>().having(
+            (error) => error.message,
+            'message',
+            contains(pattern),
+          ),
+        ),
+      );
+    });
+
+    test('a truncated surrogate diagnostic keeps the RE2 error context', () {
+      final loneSurrogate = String.fromCharCode(0xD800);
+      final repeated = 'a' * 239;
+      final pattern = ')$repeated$loneSurrogate';
+      expect(
+        () => Re2Set.compile([pattern]),
+        throwsA(
+          isA<FormatException>().having(
+            (error) => error.message,
+            'message',
+            allOf(
+              startsWith('Invalid RE2 pattern at index 0:'),
+              contains('unexpected )'),
+            ),
+          ),
+        ),
+      );
+    });
+
     test('using a disposed set throws', () {
       final set = Re2Set.compile([r'x']);
       set.dispose();

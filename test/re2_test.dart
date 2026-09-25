@@ -1,4 +1,5 @@
 import 'package:re2/re2.dart';
+import 'package:re2/src/re2_base.dart' show checkRe2MatchResult;
 import 'package:test/test.dart';
 
 void main() {
@@ -191,6 +192,21 @@ void main() {
         expect(e.message, contains('(?P<$nul>'));
       }
     });
+
+    test('a diagnostic containing a lone surrogate is decoded as WTF-8', () {
+      final loneSurrogate = String.fromCharCode(0xD800);
+      final pattern = ')$loneSurrogate';
+      expect(
+        () => Re2(pattern),
+        throwsA(
+          isA<FormatException>().having(
+            (error) => error.message,
+            'message',
+            contains(pattern),
+          ),
+        ),
+      );
+    });
   });
 
   group('unsupported features are rejected at compile time', () {
@@ -222,6 +238,20 @@ void main() {
       final re = Re2(r'\d+');
       re.dispose();
       expect(re.dispose, returnsNormally);
+    });
+  });
+
+  group('native match results', () {
+    test('distinguishes no match from native failure', () {
+      // The public match methods share this native status conversion.
+      expect(checkRe2MatchResult(0), isFalse);
+      expect(() => checkRe2MatchResult(-1), throwsStateError);
+
+      final re = Re2(r'\d+');
+      addTearDown(re.dispose);
+      expect(re.firstMatch('no digits'), isNull);
+      expect(re.allMatches('no digits'), isEmpty);
+      expect(re.matchAsPrefix('no digits'), isNull);
     });
   });
 }
