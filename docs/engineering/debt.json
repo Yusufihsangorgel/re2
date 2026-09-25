@@ -1,0 +1,221 @@
+{
+  "schema_version": 1,
+  "package": "re2",
+  "survey_digest": "f90f45c8a172068c3ed3b9488ba5a7cb4e58efa93c380d2d9a70b399349ec35e",
+  "items": [
+    {
+      "id": "re2-D001",
+      "source_index": 1,
+      "source_item_digest": "10c93231a69c8d5eef6a113a3b23f7eccc828b1c0b19d99571f7d377d0f22365",
+      "baseline_revision": "df09415",
+      "status": "open",
+      "size": "small",
+      "locations": [
+        {
+          "path": "lib/src/re2_base.dart",
+          "lines": "347-357"
+        }
+      ],
+      "kind": "performance",
+      "observation": "`matchAsPrefix` calls the eager `allMatches(input, start)` although it needs only the first match; allMatches scans the whole input and builds a list. `String.startsWith(re2)` does an unnecessary full scan on long input.",
+      "certainty": "confirmed",
+      "proposed_fix": "A private `_matchAt(input, bytes, position)` helper making a single `re2Match` call; firstMatch, allMatches and matchAsPrefix use it. A test showing the result is unchanged on long input with many matches.",
+      "related_rule_ids": [
+        "re2/R2-04",
+        "re2/R2-10",
+        "re2/R2-15"
+      ],
+      "issue_url": null,
+      "closure_criteria": "matchAsPrefix, firstMatch and allMatches share a private _matchAt helper that makes a single re2Match call. A test on long input with many matches shows unchanged results.",
+      "review_trigger": "Before modifying the affected code",
+      "resolution": null
+    },
+    {
+      "id": "re2-D002",
+      "source_index": 2,
+      "source_item_digest": "c7aa4ca8d559ba815bf4c20f23ce06657bed67fafbcaffc46d7fd29165d58282",
+      "baseline_revision": "df09415",
+      "status": "open",
+      "size": "small",
+      "locations": [
+        {
+          "path": "lib/src/re2_base.dart",
+          "lines": "64-78,128-148,167-174,182-204,238-270,293-328"
+        },
+        {
+          "path": "lib/src/re2_set.dart",
+          "lines": "69-90,131-152"
+        }
+      ],
+      "kind": "duplicated logic",
+      "observation": "The 'encodeWtf8 -> allocateBytes -> setAll -> try/finally freeBytes' skeleton appears in eight places; firstMatch and allMatches duplicate the slot allocation.",
+      "certainty": "confirmed",
+      "proposed_fix": "A `_withNativeText<T>(String, T Function(Pointer<Uint8>, int))` helper; slot allocation in a single private function.",
+      "related_rule_ids": [
+        "re2/R2-15"
+      ],
+      "issue_url": null,
+      "closure_criteria": "All native-text call sites route through a single _withNativeText helper and the match slot allocation lives in one private function.",
+      "review_trigger": "Before modifying the affected code",
+      "resolution": null
+    },
+    {
+      "id": "re2-D003",
+      "source_index": 3,
+      "source_item_digest": "200ed5d1c128652d1dffd303989168b2b0ce816c9ff4c0e078220c0a07ba1c4b",
+      "baseline_revision": "df09415",
+      "status": "open",
+      "size": "small",
+      "locations": [
+        {
+          "path": "lib/src/re2_base.dart",
+          "lines": "85-87"
+        },
+        {
+          "path": "lib/src/re2_set.dart",
+          "lines": "82"
+        }
+      ],
+      "kind": "inconsistency",
+      "observation": "Compilation error messages are read with `utf8.decode`; every other text path uses `decodeWtf8`. If an RE2 diagnostic echoes a pattern fragment, unpaired surrogate bytes can make `utf8.decode` throw; the effect was not exercised.",
+      "certainty": "probable",
+      "proposed_fix": "`decodeWtf8` (or `allowMalformed: true`) + a test with an invalid pattern containing an unpaired surrogate.",
+      "related_rule_ids": [
+        "re2/R2-02"
+      ],
+      "issue_url": null,
+      "closure_criteria": "Compilation error messages are decoded with decodeWtf8 or utf8.decode with allowMalformed: true. A test with an invalid pattern containing an unpaired surrogate produces the FormatException message.",
+      "review_trigger": "Before modifying the affected code",
+      "resolution": null
+    },
+    {
+      "id": "re2-D004",
+      "source_index": 4,
+      "source_item_digest": "43fe1770e1ccac02dd48a288c34cbdfdc97831d1d3f53c9350f781324381d841",
+      "baseline_revision": "df09415",
+      "status": "open",
+      "size": "small",
+      "locations": [
+        {
+          "path": "lib/src/re2_base.dart",
+          "lines": "359-361"
+        },
+        {
+          "path": "lib/src/re2_set.dart",
+          "lines": "135-137"
+        }
+      ],
+      "kind": "documentation drift",
+      "observation": "The dispose dartdoc counts the throwing methods but omits replaceFirst, replaceAll and matchAsPrefix (these also throw StateError). The Re2Set.matches comment says 'First call learns the count' but there is a single call.",
+      "certainty": "confirmed",
+      "proposed_fix": "Fix the dartdoc and the comment.",
+      "related_rule_ids": [
+        "re2/R2-05"
+      ],
+      "issue_url": null,
+      "closure_criteria": "The dispose dartdoc lists replaceFirst, replaceAll and matchAsPrefix among the methods that throw StateError and the Re2Set.matches comment describes the single call accurately.",
+      "review_trigger": "Before modifying the affected code",
+      "resolution": null
+    },
+    {
+      "id": "re2-D005",
+      "source_index": 5,
+      "source_item_digest": "db1409e03882ebd55b818ed1bfdd93e746f600dd76798dd3896f8ee84889d108",
+      "baseline_revision": "df09415",
+      "status": "open",
+      "size": "small",
+      "locations": [
+        {
+          "path": ".github/workflows/ci.yaml",
+          "lines": "24"
+        }
+      ],
+      "kind": "CI gap",
+      "observation": "The format step does not cover `tool/`; tool/redos_chart.dart and tool/redos_figure.dart sit outside the format check.",
+      "certainty": "confirmed",
+      "proposed_fix": "Add `tool` to the list.",
+      "related_rule_ids": [],
+      "issue_url": null,
+      "closure_criteria": "The format step in .github/workflows/ci.yaml includes tool and the files under tool/ pass the format check.",
+      "review_trigger": "Before modifying the affected code",
+      "resolution": null
+    },
+    {
+      "id": "re2-D006",
+      "source_index": 6,
+      "source_item_digest": "ae7cc8d7c2b15b4e124e8616c8d0fdaa927e8ea729f5c74db645d3b7e6998210",
+      "baseline_revision": "df09415",
+      "status": "open",
+      "size": "small",
+      "locations": [
+        {
+          "path": "lib/src/re2_base.dart",
+          "lines": "459,483"
+        }
+      ],
+      "kind": "duplicated logic",
+      "observation": "The UTF-16 width step (`length == 4 ? 2 : 1`) is written separately in `_Utf16Cursor.toUtf16` and `_utf16IndexToByteOffset`.",
+      "certainty": "confirmed",
+      "proposed_fix": "A private `_utf16Width(int utf8Length)` helper.",
+      "related_rule_ids": [
+        "re2/R2-04"
+      ],
+      "issue_url": null,
+      "closure_criteria": "_Utf16Cursor.toUtf16 and _utf16IndexToByteOffset both call a shared private _utf16Width helper.",
+      "review_trigger": "Before modifying the affected code",
+      "resolution": null
+    },
+    {
+      "id": "re2-D007",
+      "source_index": 7,
+      "source_item_digest": "4b5a57c1c03df39b63c67699cbbb6cff6d34ae5299cf4920c298bc738dec54c2",
+      "baseline_revision": "df09415",
+      "status": "open",
+      "size": "large",
+      "locations": [
+        {
+          "path": "hook/build.dart",
+          "lines": "5-7"
+        },
+        {
+          "path": "src/third_party/re2/",
+          "lines": null
+        }
+      ],
+      "kind": "vendored version",
+      "observation": "RE2 is pinned to 2022-06-01; later upstream fixes are not tracked and there is no written record.",
+      "certainty": "confirmed",
+      "proposed_fix": "Enter it in the debt register; a periodic security-fix scan. The upgrade brings an Abseil dependency and is separate, planned work.",
+      "related_rule_ids": [
+        "re2/R2-11"
+      ],
+      "issue_url": null,
+      "closure_criteria": "The debt register records the 2022-06-01 RE2 pin and a periodic security-fix scan. Any upgrade lands as separate planned work that notes the Abseil dependency.",
+      "review_trigger": "Before modifying the affected code",
+      "resolution": null
+    },
+    {
+      "id": "re2-D008",
+      "source_index": 8,
+      "source_item_digest": "c3f8958708188760296ab91b7c866ac8acd88e0cd38086a745516fde61e6712f",
+      "baseline_revision": "df09415",
+      "status": "open",
+      "size": "small",
+      "locations": [
+        {
+          "path": "analysis_options.yaml",
+          "lines": "1"
+        }
+      ],
+      "kind": "analysis strictness",
+      "observation": "Only recommended.",
+      "certainty": "confirmed",
+      "proposed_fix": "Turn on the image_ffi settings and fix the resulting diagnostics.",
+      "related_rule_ids": [],
+      "issue_url": null,
+      "closure_criteria": "analysis_options.yaml enables the image_ffi strict settings and dart analyze reports no new diagnostics.",
+      "review_trigger": "Before modifying the affected code",
+      "resolution": null
+    }
+  ]
+}

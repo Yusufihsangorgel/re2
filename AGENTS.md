@@ -76,3 +76,7 @@ Run `dart run bench/compare.dart` when deciding between engines on this machine.
 - `bench/compare.dart` — two-way `RegExp` / `Re2` decision benchmark; `bench/` and `tool/` are measurements, not the API.
 
 Supported: Dart VM and Flutter on macOS, Linux, Windows; Flutter iOS and Android. Not web (`dart:ffi` has no JS engine; a `RegExp` fallback would drop the linear-time guarantee).
+
+## Contributing
+
+Before changing this repository, read [CONTRIBUTING.md](CONTRIBUTING.md), [package engineering rules](docs/engineering/package.md), and the [debt register](docs/engineering/debt.json). These requirements apply to every contributor. The usage guidance above remains the consumer contract.
