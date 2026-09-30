@@ -44,19 +44,17 @@ answers that same 28-character input in 39 µs, and a 100,000-character one in
 `tool/redos_figure.dart` measures the same pattern at run time for 17 to 29
 characters and draws the figure above.
 
-**Instead of a backtracking engine that accepts backreferences and lookaround.**
-RE2 rejects backreferences and lookaround when the pattern is compiled. Use it
-for patterns where match time must stay linear, including a pattern that arrived
-from a user.
+Neither engine wins everywhere. The choice depends on who controls the pattern
+and the input.
 
-**Reach for it when**
-
-- You compile a pattern that came from a user, a config file, or a rules engine.
-- You match untrusted input on a server, where one request must not stall an isolate.
-- You run many patterns over the same text and want a single pass (`Re2Set`).
-
-**Skip it** if your patterns use backreferences or lookaround: `Re2` throws at
-construction for both, and `dart:core` is the right tool there.
+| Your situation | Use | Why |
+| -------------- | --- | --- |
+| The pattern comes from a user, a config file, or a rules engine | `Re2` | A hostile pattern can make `RegExp` backtrack for seconds or longer. `Re2` matches in time linear in the input. `maxBytes` caps the size of a compiled pattern, and `Re2.escape` makes a plain-text fragment literal. |
+| The pattern is a constant you wrote, but the input is untrusted | `Re2`, unless you have checked that the pattern cannot backtrack badly | A constant can still blow up. `(a+)+$` is a constant, and `RegExp` needs 2.76 s on 28 characters of `a`. |
+| The pattern is a constant you wrote and the input is yours | `RegExp` | It needs no native build and no `dispose()`. `Re2` also does not run on the web (see [Platforms](#platforms)). |
+| The pattern needs backreferences, lookahead, lookbehind, or `(?<name>...)` groups | `RegExp` | `Re2` throws `FormatException` at construction for each of them. Named groups are written `(?P<name>...)` in `Re2`. |
+| The inputs are short, or the pattern is an alternation of literal words such as ERROR, FATAL and PANIC | `RegExp` | In [the FFI cost table](#what-crossing-the-ffi-boundary-costs), `RegExp` is ahead on 16-byte inputs for all three patterns, and ahead on the alternation at every size measured. |
+| You test one input against many patterns | `Re2Set` | It scans the input once for the whole list. With `RegExp` you run each pattern separately, and each one can backtrack. |
 
 `tool/redos_chart.dart` draws that from a measurement it takes as it runs, so
 the numbers on it are this machine's rather than a claim. Two characters of

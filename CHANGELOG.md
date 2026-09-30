@@ -1,5 +1,7 @@
 ## 1.1.8
 
+- The README comparison with `RegExp` is now a decision table. It says when each
+  engine is the better choice, including the cases where `RegExp` is.
 - The README no longer makes claims about another package's documentation. The
   comparison now says only what `re2` does: it rejects backreferences and
   lookaround when the pattern is compiled.
