@@ -9,7 +9,9 @@
   It states that CI runs the Dart VM on Linux, macOS and Windows and that this
   repository has no Flutter runtime test.
 - The README names `tool/redos_figure.dart`, not `tool/redos_chart.dart`, as the
-  script that draws the first chart.
+  script that draws the first chart. It also says that `example/redos.dart`
+  prints the quoted sizes, and the `Re2Set` API docs no longer claim a cost
+  independent of the pattern count.
 
 ## 1.1.7
 

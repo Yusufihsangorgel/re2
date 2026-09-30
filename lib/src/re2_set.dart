@@ -7,15 +7,15 @@ import 'wtf8.dart';
 /// Matches many patterns against one input in a single linear pass.
 ///
 /// A [Re2Set] compiles a list of patterns into one automaton. [matches] then
-/// reports which of them match a given input, scanning the input once no matter
-/// how many patterns there are. This is the shape a rule engine wants: a web
-/// firewall, a log classifier, a content filter, a router that dispatches on
-/// which of N rules fired.
+/// reports which of them match a given input, scanning the input once. This is
+/// the shape a rule engine wants: a web firewall, a log classifier, a content
+/// filter, a router that dispatches on which of N rules fired.
 ///
 /// It is also the case a backtracking engine handles worst. With `dart:core`'s
 /// `RegExp`, testing N patterns means N separate matches, each able to blow up
-/// on hostile input, and the ReDoS exposure multiplies by N. [Re2Set] stays
-/// linear in the length of the input and independent of the pattern count.
+/// on hostile input, and the ReDoS exposure multiplies by N. The scan of
+/// [Re2Set] stays linear in the length of the input. Returning the matched
+/// indices takes work proportional to the number of matches.
 ///
 /// Build it in two steps, add then compile, because that is how RE2 builds the
 /// combined automaton:
@@ -122,8 +122,9 @@ final class Re2Set implements Finalizable {
 
   /// The set of pattern indices that match [input], in ascending order.
   ///
-  /// Empty when nothing matches. The scan is a single linear pass over [input]
-  /// regardless of [patternCount].
+  /// Empty when nothing matches. The scan is a single linear pass over [input].
+  /// Returning the indices takes work proportional to the number of matches,
+  /// and the result buffer is sized from [patternCount].
   ///
   /// Throws [StateError] if this set has been disposed.
   Set<int> matches(String input) {

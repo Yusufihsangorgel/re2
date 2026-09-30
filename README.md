@@ -40,8 +40,9 @@ come from.
 against a non-matching string of `a`s takes 5 ms at 18 characters, 173 ms at
 24, and 2.76 s at 28, roughly doubling with every character you add. RE2
 answers that same 28-character input in 39 µs, and a 100,000-character one in
-2.6 ms. `tool/redos_figure.dart` takes this measurement at run time and draws
-the figure above.
+2.6 ms. `dart run example/redos.dart` prints these sizes.
+`tool/redos_figure.dart` measures the same pattern at run time for 17 to 29
+characters and draws the figure above.
 
 **Instead of a backtracking engine that accepts backreferences and lookaround.**
 RE2 rejects backreferences and lookaround when the pattern is compiled. Use it
@@ -270,10 +271,10 @@ try {
 The returned indices are positions in the list you compiled. This is the one
 thing a backtracking engine cannot follow: with `RegExp` you would run N
 separate matches, each able to blow up, and the ReDoS exposure multiplies by the
-rule count. `Re2Set` scans the input with a combined automaton. The scan stays linear in
-the input length. Returning all matched indices takes work
-proportional to the number of matches and allocates space based on the number
-of patterns. `example/ruleset.dart` runs a small WAF-style set.
+rule count. `Re2Set` scans the input with a combined automaton. The scan stays
+linear in the input length. Returning all matched indices takes work
+proportional to the number of matches and allocates space based on the number of
+patterns. `example/ruleset.dart` runs a small WAF-style set.
 
 ## Untrusted patterns
 
