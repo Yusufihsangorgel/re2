@@ -4,7 +4,7 @@
 /// against a whole list of patterns. With `dart:core`'s RegExp that is one
 /// match per rule, each able to backtrack, so the ReDoS exposure grows with the
 /// ruleset. `Re2Set` compiles the rules into one automaton and answers which of
-/// them fired in one scan, whatever the rule count.
+/// them fired in one scan of the input.
 ///
 ///     dart run example/ruleset.dart
 library;

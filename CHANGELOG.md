@@ -1,3 +1,16 @@
+## 1.1.8
+
+- The README no longer makes claims about another package's documentation. The
+  comparison now says only what `re2` does: it rejects backreferences and
+  lookaround when the pattern is compiled.
+- The `Re2Set` section no longer says its cost is independent of the number of
+  patterns. It now says what grows with the match count and the pattern count.
+- The platforms section no longer reports Flutter desktop and mobile as verified.
+  It states that CI runs the Dart VM on Linux, macOS and Windows and that this
+  repository has no Flutter runtime test.
+- The README names `tool/redos_figure.dart`, not `tool/redos_chart.dart`, as the
+  script that draws the first chart.
+
 ## 1.1.7
 
 - The build hook returns early when a build does not request code assets.

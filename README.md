@@ -40,18 +40,13 @@ come from.
 against a non-matching string of `a`s takes 5 ms at 18 characters, 173 ms at
 24, and 2.76 s at 28, roughly doubling with every character you add. RE2
 answers that same 28-character input in 39 µs, and a 100,000-character one in
-2.6 ms. `tool/redos_chart.dart` takes this measurement at run time and draws
+2.6 ms. `tool/redos_figure.dart` takes this measurement at run time and draws
 the figure above.
 
-**Instead of `oniguruma_dart`.** Its pubspec describes it as "a pure-Dart port
-of the Oniguruma regex engine (backtracking bytecode VM)," and its README
-sends you to the sibling `oniguruma_native` package when you want "robustness
-on pathological backtracking." It does expose possessive quantifiers and
-atomic groups, which the README says "never backtrack," but that protection
-only applies if whoever wrote the pattern knew to type `a++` instead of `a+`.
-RE2 drops backreferences from the grammar entirely, so the linear-time bound
-holds for every pattern it will compile, including one that arrived from a
-user.
+**Instead of a backtracking engine that accepts backreferences and lookaround.**
+RE2 rejects backreferences and lookaround when the pattern is compiled. Use it
+for patterns where match time must stay linear, including a pattern that arrived
+from a user.
 
 **Reach for it when**
 
@@ -275,8 +270,10 @@ try {
 The returned indices are positions in the list you compiled. This is the one
 thing a backtracking engine cannot follow: with `RegExp` you would run N
 separate matches, each able to blow up, and the ReDoS exposure multiplies by the
-rule count. `Re2Set` stays linear in the input length and independent of how
-many patterns there are. `example/ruleset.dart` runs a small WAF-style set.
+rule count. `Re2Set` scans the input with a combined automaton. The scan stays linear in
+the input length. Returning all matched indices takes work
+proportional to the number of matches and allocates space based on the number
+of patterns. `example/ruleset.dart` runs a small WAF-style set.
 
 ## Untrusted patterns
 
@@ -338,23 +335,16 @@ The native library is compiled at build time through Dart build hooks
 (Dart 3.10+). Nothing to install beyond a C++ toolchain (Xcode CLT, gcc/clang,
 or MSVC).
 
-Build hooks are stable in Flutter now, and `re2` works in a Flutter app as well
-as in a plain Dart one. Verified end to end: it resolves, compiles, and runs a
-match inside a `flutter test`, and `flutter build macos` produces a working app
-that links the native library.
+Build hooks are stable in Flutter. You can add `re2` to a Flutter app as well as
+a plain Dart one. CI runs the tests on the Dart VM on Linux, macOS, and
+Windows. This repository does not include a Flutter runtime test for desktop or
+mobile.
 
-Mobile is checked by running a match inside the app process rather than by
-building it. A Flutter app that constructs a `Re2` at startup and prints the
-result reports `hasMatch=true` on an iPhone 17 Pro simulator running iOS 26.5,
-and on an Android 15 arm64 emulator (API 35). A green build is not the same
-evidence: the Android build stayed green in 1.0.1 while the first `Re2(...)`
-threw `dlopen failed` on a device.
-
-| Target                              | Supported |
-| ----------------------------------- | --------- |
-| Dart VM / server (macOS/Linux/Win)  | yes       |
-| Flutter desktop (macOS/Linux/Win)   | yes       |
-| Flutter mobile (Android/iOS)        | yes       |
+| Target                              | Status                                      |
+| ----------------------------------- | ------------------------------------------- |
+| Dart VM / server (macOS/Linux/Win)  | yes, tested in CI                           |
+| Flutter desktop (macOS/Linux/Win)   | no Flutter test in this repository          |
+| Flutter mobile (Android/iOS)        | no Flutter test in this repository          |
 | Web                                 | no. FFI has no JS engine, and the linear-time guarantee cannot be offered there; use it on the server |
 
 The one place to be careful is web: there is no native RE2 in a browser, and
