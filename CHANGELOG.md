@@ -14,6 +14,9 @@
   script that draws the first chart. It also says that `example/redos.dart`
   prints the quoted sizes, and the `Re2Set` API docs no longer claim a cost
   independent of the pattern count.
+- The package resolves again in apps on Flutter 3.38 to 3.44. The
+  `code_assets` constraint is now `>=1.2.1 <3.0.0`. Version 2 of `code_assets`
+  needs a newer `meta` than those Flutter releases pin.
 
 ## 1.1.7
 
