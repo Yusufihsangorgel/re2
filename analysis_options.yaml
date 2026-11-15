@@ -1,1 +1,7 @@
 include: package:lints/recommended.yaml
+
+analyzer:
+  exclude:
+    # Copied into the app .github/workflows/flutter-compat.yaml generates. Its
+    # Flutter imports resolve there and not in this package.
+    - tool/ci/integration_test/**
