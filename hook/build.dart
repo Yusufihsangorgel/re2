@@ -75,7 +75,7 @@ void main(List<String> args) async {
       // form, so the other targets are left alone.
       cppLinkStdLib: targetOS == OS.android ? 'c++_static' : null,
       libraries: [
-        // RE2's DFA budgeting calls log(). Android keeps math in a separate
+        // RE2's prefilter tree calls log(). Android keeps math in a separate
         // libm and its linker will not resolve a symbol from a library that
         // is not in DT_NEEDED. It only surfaced once the C++ standard
         // library above was linked statically: libc++_shared.so had pulled

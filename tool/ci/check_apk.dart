@@ -4,10 +4,10 @@
 ///
 /// For each ABI a default `flutter build apk` produces, the library has to be
 /// present, every LOAD segment has to be aligned to 16 KB (devices with 16 KB
-/// pages refuse to load anything less), and it may only link against libc,
-/// libm and libdl. The shim is C++ and links the C++ standard library
-/// statically on Android. libc++_shared.so may neither be NEEDED nor be packed
-/// into the APK.
+/// pages refuse to load anything less), it has to link against libm, and it
+/// may only link against libc, libm and libdl. The shim is C++ and links the
+/// C++ standard library statically on Android. libc++_shared.so may neither be
+/// NEEDED nor be packed into the APK.
 ///
 /// llvm-readelf comes from the Android NDK: `ANDROID_NDK_HOME` first, then the
 /// newest NDK under `ANDROID_HOME/ndk` (or `ANDROID_SDK_ROOT/ndk`).
@@ -20,6 +20,11 @@ const soName = 'libre2_shim.so';
 const abis = ['armeabi-v7a', 'arm64-v8a', 'x86_64'];
 const pageSize = 0x4000;
 const allowedNeeded = {'libc.so', 'libm.so', 'libdl.so'};
+
+/// hook/build.dart links libm on purpose. Android keeps math in a separate
+/// library and its linker only resolves symbols from a NEEDED entry. A library
+/// without libm builds cleanly and then fails at dlopen on devices.
+const requiredNeeded = {'libm.so'};
 
 /// The shared C++ runtime. `cppLinkStdLib: 'c++_static'` keeps it out.
 const sharedCpp = 'libc++_shared.so';
@@ -70,6 +75,11 @@ void main(List<String> args) {
       for (final name in needed) {
         if (!allowedNeeded.contains(name)) {
           problems.add('$abi: unexpected NEEDED $name');
+        }
+      }
+      for (final name in requiredNeeded) {
+        if (!needed.contains(name)) {
+          problems.add('$abi: $name is not NEEDED');
         }
       }
     }
