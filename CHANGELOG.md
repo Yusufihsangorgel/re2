@@ -20,6 +20,9 @@
 - The package resolves again in apps on Flutter 3.38 to 3.44. The
   `code_assets` constraint is now `>=1.2.1 <3.0.0`. Version 2 of `code_assets`
   needs a newer `meta` than those Flutter releases pin.
+- Dev dependency bounds raised to `test` `^1.27.0` and `frontend_server_client`
+  `^4.0.0`. With the old bounds `dart pub downgrade` resolved packages that do
+  not compile. CI now tests the lowest versions.
 
 ## 1.1.7
 
