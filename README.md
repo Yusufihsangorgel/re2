@@ -336,14 +336,24 @@ or MSVC).
 
 Build hooks are stable in Flutter. You can add `re2` to a Flutter app as well as
 a plain Dart one. CI runs the tests on the Dart VM on Linux, macOS, and
-Windows. This repository does not include a Flutter runtime test for desktop or
-mobile.
+Windows. A second workflow (`.github/workflows/flutter-compat.yaml`) builds a
+generated Flutter app on every stable line from 3.38 to 3.50. The app compiles
+a pattern and checks a match, its capture groups, UTF-16 offsets and the error
+for an unsupported pattern. It does so on Linux, on x86_64 Android emulators at
+API 24 and 36, and on an iOS simulator on an arm64 macOS runner (iPhone 16,
+iOS 18.5, Xcode 16.4). The emulator and simulator jobs use Flutter 3.38.10 and
+3.50.0. The release APK is checked for 16 KB aligned LOAD segments on
+armeabi-v7a, arm64-v8a and x86_64, and for the C++ standard library linked in
+statically. Physical devices, arm64 Android, Android with 16 KB pages, and
+Flutter apps on macOS or Windows are not run in CI.
 
 | Target                              | Status                                      |
 | ----------------------------------- | ------------------------------------------- |
 | Dart VM / server (macOS/Linux/Win)  | yes, tested in CI                           |
-| Flutter desktop (macOS/Linux/Win)   | no Flutter test in this repository          |
-| Flutter mobile (Android/iOS)        | no Flutter test in this repository          |
+| Flutter desktop (Linux)             | yes, tested in CI                           |
+| Flutter desktop (macOS/Win)         | no Flutter test in this repository          |
+| Flutter Android                     | x86_64 emulator at API 24 and 36, tested in CI |
+| Flutter iOS                         | arm64 simulator on iOS 18.5, tested in CI   |
 | Web                                 | no. FFI has no JS engine, and the linear-time guarantee cannot be offered there; use it on the server |
 
 The one place to be careful is web: there is no native RE2 in a browser, and

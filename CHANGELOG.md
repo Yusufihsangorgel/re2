@@ -7,9 +7,12 @@
   lookaround when the pattern is compiled.
 - The `Re2Set` section no longer says its cost is independent of the number of
   patterns. It now says what grows with the match count and the pattern count.
-- The platforms section no longer reports Flutter desktop and mobile as verified.
-  It states that CI runs the Dart VM on Linux, macOS and Windows and that this
-  repository has no Flutter runtime test.
+- The platforms section reports only what CI runs. A generated Flutter app
+  matches a pattern on Linux, on Android emulators at API 24 and 36, and on an
+  iOS simulator. The section no longer reports Flutter apps on macOS and
+  Windows as verified.
+- The pubspec declares `platforms:` (Android, iOS, Linux, macOS, Windows), the
+  same five that pub.dev derived for 1.1.7. Web is not listed.
 - The README names `tool/redos_figure.dart`, not `tool/redos_chart.dart`, as the
   script that draws the first chart. It also says that `example/redos.dart`
   prints the quoted sizes, and the `Re2Set` API docs no longer claim a cost
