@@ -191,7 +191,11 @@ jobs:
     name: Flutter ${{ matrix.flutter.version }} Android API ${{ matrix.api-level }} emulator
     runs-on: ubuntu-24.04
     # Room for the build, the emulator boot and three test attempts of about
-    # 12 minutes each.
+    # 12 minutes each. The script stops its own install before the test after
+    # 120 seconds. The adb install inside flutter test has no limit of its own
+    # and a hang there lasts until the 12 minute load timeout. If adb stays
+    # stuck and every call runs into its limit, this job limit can end the
+    # third attempt.
     timeout-minutes: 50
     env:
       APP_PLATFORMS: android
@@ -220,6 +224,24 @@ jobs:
       - name: Show the Flutter version
         run: flutter --version
 
+      # Same key as the compat job, restore only. That job saves the entries
+      # for these two release lines from main. This job adds no entry to the
+      # repository cache.
+      - name: Key the Gradle cache
+        id: gradle-key
+        working-directory: ${{ runner.temp }}/compat_app/android
+        run: |
+          hash=$(cat gradle/wrapper/gradle-wrapper.properties settings.gradle.kts | sha256sum | cut -c1-16)
+          echo "key=gradle-$RUNNER_OS-$hash" >> "$GITHUB_OUTPUT"
+
+      - name: Restore the Gradle cache
+        uses: actions/cache/restore@v4
+        with:
+          path: |
+            ~/.gradle/caches
+            ~/.gradle/wrapper
+          key: ${{ steps.gradle-key.outputs.key }}
+
       # Gradle, the NDK and the build hook run here and not while the emulator
       # waits. A build failure then shows up as its own step.
       - name: Build the x86_64 debug APK
@@ -236,7 +258,17 @@ jobs:
       # The action runs each script line in a separate shell. It sets
       # EMULATOR_PORT, and the emulator's adb serial is emulator-<port>.
       # Flutter can stall here before the first test too, in adb install or
-      # after it. The script handles that as on the simulator.
+      # after it. The script handles that as on the simulator. With
+      # --android-app it first installs the debug APK itself: the one from the
+      # build step on the first attempt, the one flutter test built on a retry.
+      # It stops that install after 120 seconds. An install that fails or runs
+      # into the limit counts as an attempt that started no test. The adb
+      # install inside flutter test keeps no limit and a hang there ends at
+      # the 12 minute load timeout. Before a retry the script restarts adb,
+      # waits for the device to boot and uninstalls the app. After two of its
+      # own installs in a row hang it also reboots the device. A failed
+      # attempt prints the device state.
+      # The app that flutter create makes has the ID com.example.compat_app.
       - name: Match on the emulator
         uses: reactivecircus/android-emulator-runner@v2
         with:
@@ -247,7 +279,7 @@ jobs:
           script: |
             adb devices -l
             echo "device emulator-$EMULATOR_PORT, API $(adb -s emulator-$EMULATOR_PORT shell getprop ro.build.version.sdk), ABI $(adb -s emulator-$EMULATOR_PORT shell getprop ro.product.cpu.abi)"
-            sh "$GITHUB_WORKSPACE/tool/ci/run_device_test.sh" "emulator-$EMULATOR_PORT"
+            sh "$GITHUB_WORKSPACE/tool/ci/run_device_test.sh" --android-app com.example.compat_app "emulator-$EMULATOR_PORT"
 
   ios-simulator:
     name: Flutter ${{ matrix.flutter.version }} iOS simulator
