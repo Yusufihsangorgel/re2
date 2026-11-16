@@ -24,6 +24,9 @@
   `^4.0.0` is a new dev dependency. With the old bounds `dart pub downgrade`
   resolved versions that do not build or run on Dart 3.10. CI now tests the
   lowest versions on Dart 3.10.0.
+- `matchAsPrefix`, and `String.startsWith` with an `Re2`, now make one native
+  match call at the given start instead of collecting every match in the input.
+  The result is the same.
 
 ## 1.1.7
 

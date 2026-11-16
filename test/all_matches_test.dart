@@ -80,4 +80,75 @@ void main() {
       expect(re.allMatches('abc', 3), isEmpty); // len is in range
     });
   });
+
+  group('matchAsPrefix', () {
+    // The first entry of allMatches counts only if it begins at `start`.
+    String? describe(Match? m) => m == null
+        ? null
+        : '${m.start}:${m.end}:${[for (var i = 0; i <= m.groupCount; i++) m.group(i)]}';
+    String? viaAllMatches(Re2 re, String input, int start) {
+      for (final match in re.allMatches(input, start)) {
+        return describe(match.start == start ? match : null);
+      }
+      return null;
+    }
+
+    test('gives the same result as the first of allMatches at every start', () {
+      final patterns = [
+        r'\d+',
+        r'(\d)(x)?',
+        r'^a',
+        r'a*',
+        '',
+        r'\x{E9}+',
+        r'\x{1F600}+',
+        r'(?P<w>\w+)',
+        r'.',
+      ];
+      final lone = String.fromCharCode(0xD800);
+      final inputs = [
+        '',
+        'abc123',
+        'a1b22c333',
+        'aab',
+        'éé 1é',
+        'a\u{1F600}\u{1F600}b',
+        'x${lone}1',
+      ];
+      for (final pattern in patterns) {
+        final re = Re2(pattern);
+        addTearDown(re.dispose);
+        for (final input in inputs) {
+          for (var start = 0; start <= input.length; start++) {
+            expect(
+              describe(re.matchAsPrefix(input, start)),
+              viaAllMatches(re, input, start),
+              reason: '/$pattern/ on ${input.codeUnits} at $start',
+            );
+          }
+        }
+      }
+    });
+
+    test('anchors on a long input with many matches', () {
+      final re = Re2(r'item \d+');
+      addTearDown(re.dispose);
+      final input = List.generate(2048, (index) => 'item $index').join(', ');
+      final lastItemStart = input.lastIndexOf('item');
+      final separatorStart = input.indexOf(',');
+
+      expect(re.matchAsPrefix(input, lastItemStart)?.group(0), 'item 2047');
+      expect(input.startsWith(re, lastItemStart), isTrue);
+      expect(re.matchAsPrefix(input, separatorStart), isNull);
+      expect(input.startsWith(re, separatorStart), isFalse);
+    });
+
+    test('a start inside a surrogate pair does not match', () {
+      final re = Re2(r'.');
+      addTearDown(re.dispose);
+      expect(re.matchAsPrefix('\u{1F600}a', 0)?.end, 2);
+      expect(re.matchAsPrefix('\u{1F600}a', 1), isNull);
+      expect(re.matchAsPrefix('\u{1F600}a', 2)?.group(0), 'a');
+    });
+  });
 }

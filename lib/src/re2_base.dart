@@ -349,11 +349,44 @@ final class Re2 implements Finalizable, Pattern {
     RangeError.checkValueInInterval(start, 0, input.length, 'start');
     // RE2's leftmost search from `start` returns the earliest match at or after
     // it; a prefix match is exactly that match when it begins at `start`. If the
-    // earliest match begins later, nothing matches at `start`.
-    for (final match in allMatches(input, start)) {
+    // earliest match begins later, nothing matches at `start`. A single native
+    // call answers that. No later match is searched for or built.
+    final bytes = encodeWtf8(input);
+    final textLength = bytes.length;
+    final slots = _groupCount + 1;
+    final ptr = allocateBytes(textLength);
+    final starts = allocateInt32(slots);
+    final ends = allocateInt32(slots);
+    try {
+      ptr.asTypedList(textLength).setAll(0, bytes);
+      final position = _utf16IndexToByteOffset(bytes, start);
+      final result = re2Match(
+        _handle,
+        ptr,
+        textLength,
+        position,
+        starts,
+        ends,
+        slots,
+      );
+      if (result <= 0) return null;
+      final match = _buildMatch(
+        input,
+        bytes,
+        starts,
+        ends,
+        slots,
+        _Utf16Cursor(bytes),
+      );
+      // The earliest match must begin at `start` itself. A `start` inside a
+      // surrogate pair rounds forward to the next code point. A match there
+      // begins one code unit later and does not count.
       return match.start == start ? match : null;
+    } finally {
+      freeBytes(ptr);
+      freeInt32(starts);
+      freeInt32(ends);
     }
-    return null;
   }
 
   /// Releases the native handle. Safe to call more than once. After disposal,
